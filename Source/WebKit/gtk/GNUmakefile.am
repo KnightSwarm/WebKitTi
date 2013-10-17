@@ -164,6 +164,7 @@ webkitgtk_static_h_api += \
 	$(srcdir)/Source/WebKit/gtk/webkit/webkitwebresource.h \
 	$(srcdir)/Source/WebKit/gtk/webkit/webkitwebsettings.h \
 	$(srcdir)/Source/WebKit/gtk/webkit/webkitwebwindowfeatures.h \
+	$(srcdir)/Source/WebKit/gtk/webkit/webkittitanium.h \
 	$(srcdir)/Source/WebKit/gtk/webkit/webkitwebview.h
 
 webkitgtk_built_h_api += \
@@ -281,6 +282,7 @@ webkitgtk_sources += \
 	Source/WebKit/gtk/webkit/webkitwebview.cpp \
 	Source/WebKit/gtk/webkit/webkitwebviewprivate.h \
 	Source/WebKit/gtk/webkit/webkitwebwindowfeatures.cpp \
+	Source/WebKit/gtk/webkit/webkittitanium.cpp \
 	Source/WebKit/gtk/webkit/webkitwebwindowfeaturesprivate.h
 
 if ENABLE_WEBKIT1
