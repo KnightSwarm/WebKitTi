@@ -23,64 +23,21 @@
 
 #include "CachedResourceClient.h"
 #include "CachedResourceHandle.h"
-#include <wtf/text/TextPosition.h>
-#include <wtf/text/WTFString.h>
 
 namespace WebCore {
 
 class CachedScript;
-class ContainerNode;
 class Element;
-class ScriptElement;
+class ScriptElementData;
 class ScriptSourceCode;
+class ScriptEvaluator;
 
-class ScriptElement : private CachedResourceClient {
-    WTF_MAKE_FAST_ALLOCATED;
+class ScriptElement {
 public:
-    ScriptElement(Element*, bool createdByParser, bool isEvaluated);
-    virtual ~ScriptElement();
+    ScriptElement() { }
+    virtual ~ScriptElement() { }
 
-    Element* element() const { return m_element; }
-
-    enum LegacyTypeSupport { DisallowLegacyTypeInTypeAttribute, AllowLegacyTypeInTypeAttribute };
-    bool prepareScript(const TextPosition& scriptStartPosition = TextPosition::minimumPosition(), LegacyTypeSupport = DisallowLegacyTypeInTypeAttribute);
-
-    String scriptCharset() const { return m_characterEncoding; }
-    String scriptContent() const;
-    void executeScript(const ScriptSourceCode&);
-    void execute(CachedScript*);
-
-    // XML parser calls these
-    virtual void dispatchLoadEvent() = 0;
-    void dispatchErrorEvent();
-    bool isScriptTypeSupported(LegacyTypeSupport) const;
-
-    bool haveFiredLoadEvent() const { return m_haveFiredLoad; }
-    bool willBeParserExecuted() const { return m_willBeParserExecuted; }
-    bool readyToBeParserExecuted() const { return m_readyToBeParserExecuted; }
-    bool willExecuteWhenDocumentFinishedParsing() const { return m_willExecuteWhenDocumentFinishedParsing; }
-    CachedResourceHandle<CachedScript> cachedScript() { return m_cachedScript; }
-
-protected:
-    void setHaveFiredLoadEvent(bool haveFiredLoad) { m_haveFiredLoad = haveFiredLoad; }
-    bool isParserInserted() const { return m_parserInserted; }
-    bool alreadyStarted() const { return m_alreadyStarted; }
-    bool forceAsync() const { return m_forceAsync; }
-
-    // Helper functions used by our parent classes.
-    void insertedInto(ContainerNode*);
-    void childrenChanged();
-    void handleSourceAttribute(const String& sourceUrl);
-    void handleAsyncAttribute();
-
-private:
-    bool ignoresLoadRequest() const;
-    bool isScriptForEventSupported() const;
-
-    bool requestScript(const String& sourceUrl);
-    void stopLoadRequest();
-
-    virtual void notifyFinished(CachedResource*);
+    virtual String scriptContent() const = 0;
 
     virtual String sourceAttributeValue() const = 0;
     virtual String charsetAttributeValue() const = 0;
@@ -88,28 +45,66 @@ private:
     virtual String languageAttributeValue() const = 0;
     virtual String forAttributeValue() const = 0;
     virtual String eventAttributeValue() const = 0;
-    virtual bool asyncAttributeValue() const = 0;
-    virtual bool deferAttributeValue() const = 0;
-    virtual bool hasSourceAttribute() const = 0;
 
-    Element* m_element;
-    CachedResourceHandle<CachedScript> m_cachedScript;
-    WTF::OrdinalNumber m_startLineNumber;
-    bool m_parserInserted : 1;
-    bool m_isExternalScript : 1;
-    bool m_alreadyStarted : 1;
-    bool m_haveFiredLoad : 1;
-    bool m_willBeParserExecuted : 1; // Same as "The parser will handle executing the script."
-    bool m_readyToBeParserExecuted : 1;
-    bool m_willExecuteWhenDocumentFinishedParsing : 1;
-    bool m_forceAsync : 1;
-    bool m_willExecuteInOrder : 1;
-    bool m_requestUsesAccessControl : 1;
-    String m_characterEncoding;
-    String m_fallbackCharacterEncoding;
+    virtual void dispatchLoadEvent() = 0;
+    virtual void dispatchErrorEvent() = 0;
+
+    // A charset for loading the script (may be overridden by HTTP headers or a BOM).
+    virtual String scriptCharset() const = 0;
+    static void addScriptEvaluator(ScriptEvaluator* evaluator);
+    static WTF::Vector<ScriptEvaluator*> evaluators;
+
+    virtual bool shouldExecuteAsJavaScript() const = 0;
+
+protected:
+    // Helper functions used by our parent classes.
+    static void insertedIntoDocument(ScriptElementData&, const String& sourceUrl);
+    static void removedFromDocument(ScriptElementData&);
+    static void childrenChanged(ScriptElementData&);
+    static void finishParsingChildren(ScriptElementData&, const String& sourceUrl);
+    static void handleSourceAttribute(ScriptElementData&, const String& sourceUrl);
 };
 
-ScriptElement* toScriptElementIfPossible(Element*);
+// HTML/SVGScriptElement hold this struct as member variable
+// and pass it to the static helper functions in ScriptElement
+class ScriptElementData : private CachedResourceClient {
+public:
+    ScriptElementData(ScriptElement*, Element*);
+    virtual ~ScriptElementData();
+
+    bool ignoresLoadRequest() const;
+    bool shouldExecuteAsJavaScript() const;
+    ScriptEvaluator* findEvaluator() const;
+
+    String scriptContent() const;
+    String scriptCharset() const;
+
+    Element* element() const { return m_element; }
+    bool createdByParser() const { return m_createdByParser; }
+    void setCreatedByParser(bool value) { m_createdByParser = value; }
+    bool haveFiredLoadEvent() const { return m_firedLoad; }
+    void setHaveFiredLoadEvent(bool firedLoad) { m_firedLoad = firedLoad; }
+
+    void requestScript(const String& sourceUrl);
+    void evaluateScript(const ScriptSourceCode&);
+    void stopLoadRequest();
+
+    void execute(CachedScript*);
+
+private:
+    virtual void notifyFinished(CachedResource*);
+
+private:
+    ScriptElement* m_scriptElement;
+    Element* m_element;
+    CachedResourceHandle<CachedScript> m_cachedScript;
+    bool m_createdByParser;
+    bool m_requested;
+    bool m_evaluated;
+    bool m_firedLoad;
+};
+
+ScriptElement* toScriptElement(Element*);
 
 }
 

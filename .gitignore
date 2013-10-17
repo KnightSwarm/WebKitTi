@@ -1,0 +1,10 @@
+*.pyc
+*.lo
+*.o
+*.a
+*.Plo
+*.la
+DerivedSources*
+Programs*
+config.log
+GNUmakefile
