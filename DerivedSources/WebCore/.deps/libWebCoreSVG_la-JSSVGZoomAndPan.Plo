@@ -1,0 +1,2 @@
+DerivedSources/WebCore/libWebCoreSVG_la-JSSVGZoomAndPan.lo: \
+ DerivedSources/WebCore/JSSVGZoomAndPan.cpp
