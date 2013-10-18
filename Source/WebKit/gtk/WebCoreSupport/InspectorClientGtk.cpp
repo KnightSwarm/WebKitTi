@@ -34,11 +34,11 @@
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 
-char *CustomGtkWebInspectorPath = 0;
 
 using namespace WebCore;
 
 namespace WebKit {
+char *CustomGtkWebInspectorPath = 0;
 
 static void notifyWebViewDestroyed(WebKitWebView* webView, InspectorFrontendClient* inspectorFrontendClient)
 {

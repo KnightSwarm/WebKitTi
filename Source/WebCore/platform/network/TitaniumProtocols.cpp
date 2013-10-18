@@ -2,11 +2,12 @@
  * Appcelerator WebKit - licensed under the Apache Public License 2
  * see LICENSE in the root folder for details on the license.
  * Copyright (c) 2009 Appcelerator, Inc. All Rights Reserved.
+ * Copyright (C) 2013 Knightswarm Handelsbolag
  */
 
 #include "config.h"
-#include "Base64.h"
-#include "CString.h"
+#include <wtf/text/Base64.h>
+#include <wtf/text/CString.h>
 #include "HTTPParsers.h"
 #include "MIMETypeRegistry.h"
 #include "NotImplemented.h"
@@ -72,8 +73,8 @@ String TitaniumProtocols::Preprocess(const ResourceRequest& request, String& mim
 
     HTTPHeaderMap::const_iterator end = headerMap.end();
     for (HTTPHeaderMap::const_iterator it = headerMap.begin(); it != end; ++it) {
-        headerPointer->key = strdup(it->first.string().utf8().data());
-        headerPointer->value = strdup(it->second.utf8().data());
+        headerPointer->key = strdup(it->key.string().utf8().data());
+        headerPointer->value = strdup(it->value.utf8().data());
         headerPointer++;
     }
     headerPointer->key = headerPointer->value = 0;

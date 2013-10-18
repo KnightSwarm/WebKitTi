@@ -40421,5 +40421,64 @@ Database and Indexed Database databases.</doc>
         </parameter>
       </parameters>
     </function>
+    <function name="titanium_set_can_preprocess_cb"
+              c:identifier="webkit_titanium_set_can_preprocess_cb"
+              introspectable="0">
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="cb" transfer-ownership="none">
+          <type c:type="CanPreprocessURLCallback"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="titanium_set_inspector_url"
+              c:identifier="webkit_titanium_set_inspector_url">
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="url" transfer-ownership="none">
+          <type name="utf8" c:type="const gchar*"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="titanium_set_normalize_url_cb"
+              c:identifier="webkit_titanium_set_normalize_url_cb"
+              introspectable="0">
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="cb" transfer-ownership="none">
+          <type c:type="NormalizeURLCallback"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="titanium_set_preprocess_cb"
+              c:identifier="webkit_titanium_set_preprocess_cb"
+              introspectable="0">
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="cb" transfer-ownership="none">
+          <type c:type="PreprocessURLCallback"/>
+        </parameter>
+      </parameters>
+    </function>
+    <function name="titanium_set_url_to_file_url_cb"
+              c:identifier="webkit_titanium_set_url_to_file_url_cb"
+              introspectable="0">
+      <return-value transfer-ownership="none">
+        <type name="none" c:type="void"/>
+      </return-value>
+      <parameters>
+        <parameter name="cb" transfer-ownership="none">
+          <type c:type="URLToFileURLCallback"/>
+        </parameter>
+      </parameters>
+    </function>
   </namespace>
 </repository>
