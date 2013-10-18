@@ -957,8 +957,8 @@ Source/WebCore/dom/libWebCore_la-ScriptElement.lo: \
  DerivedSources/WebCore/SettingsMacros.h Source/WebCore/dom/Text.h \
  Source/WebCore/dom/CharacterData.h Source/WebCore/dom/Node.h \
  Source/WebCore/dom/TextNodeTraversal.h \
- Source/WebCore/dom/NodeTraversal.h DerivedSources/WebCore/SVGNames.h \
- Source/WebCore/svg/SVGScriptElement.h \
+ Source/WebCore/dom/NodeTraversal.h Source/WebCore/dom/ScriptEvaluator.h \
+ DerivedSources/WebCore/SVGNames.h Source/WebCore/svg/SVGScriptElement.h \
  Source/WebCore/svg/SVGAnimatedBoolean.h \
  Source/WebCore/svg/properties/SVGAnimatedStaticPropertyTearOff.h \
  Source/WebCore/svg/properties/SVGAnimatedProperty.h \
@@ -3254,6 +3254,8 @@ Source/WebCore/dom/Node.h:
 Source/WebCore/dom/TextNodeTraversal.h:
 
 Source/WebCore/dom/NodeTraversal.h:
+
+Source/WebCore/dom/ScriptEvaluator.h:
 
 DerivedSources/WebCore/SVGNames.h:
 

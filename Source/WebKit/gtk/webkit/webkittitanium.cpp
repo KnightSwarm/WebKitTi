@@ -16,7 +16,7 @@
 #include "TitaniumProtocols.h"
 
 namespace WebCore {
-    class String;
+    //class String;
     class ScriptSourceCode;
 }
 
@@ -52,12 +52,12 @@ class EvaluatorAdapter : public WebCore::ScriptEvaluator {
         {
         }
 
-        bool matchesMimeType(const WebCore::String &mimeType) {
+        bool matchesMimeType(const WTF::String &mimeType) {
             return evaluator->matchesMimeType(mimeType.utf8().data());
         }
 
-        void evaluate(const WebCore::String &mimeType, const WebCore::ScriptSourceCode& sourceCode, void *context) {
-            evaluator->evaluate(mimeType.utf8().data(), sourceCode.jsSourceCode().toString().ascii(), context);
+        void evaluate(const WTF::String &mimeType, const WebCore::ScriptSourceCode& sourceCode, void *context) {
+            evaluator->evaluate(mimeType.utf8().data(), sourceCode.jsSourceCode().toString().ascii().data(), context);
 
         }
 };

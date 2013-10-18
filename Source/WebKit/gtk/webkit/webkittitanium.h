@@ -40,9 +40,6 @@ WEBKIT_API void
 webkit_titanium_set_url_to_file_url_cb                   (URLToFileURLCallback cb);
 
 WEBKIT_API void
-webkit_titanium_set_url_to_file_url_cb                   (URLToFileURLCallback cb);
-
-WEBKIT_API void
 webkit_titanium_set_can_preprocess_cb                    (CanPreprocessURLCallback cb);
 
 WEBKIT_API void
