@@ -9,3 +9,8 @@ Programs*
 config.log
 GNUmakefile
 *.deps*
+autom4te.cache*
+autotoolsconfig.h
+autotoolsconfig.h.in
+config.status
+*.libs*

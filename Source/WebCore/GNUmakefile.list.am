@@ -5548,7 +5548,9 @@ webcore_platform_sources += \
 	Source/WebCore/platform/ScrollAnimatorNone.cpp \
 	Source/WebCore/platform/ScrollAnimatorNone.h \
 	Source/WebCore/platform/ThreadGlobalData.cpp \
-	Source/WebCore/platform/ThreadGlobalData.h
+	Source/WebCore/platform/ThreadGlobalData.h \
+	Source/WebCore/platform/network/TitaniumProtocols.h \
+	Source/WebCore/platform/network/TitaniumProtocols.cpp
 
 platform_sources += \
 	Source/WebCore/platform/animation/AnimationUtilities.h \
