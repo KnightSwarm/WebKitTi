@@ -1,5 +1,0 @@
-Source/ThirdParty/ANGLE/src/compiler/preprocessor/libANGLE_la-Lexer.lo: \
- Source/ThirdParty/ANGLE/src/compiler/preprocessor/Lexer.cpp \
- Source/ThirdParty/ANGLE/src/compiler/preprocessor/Lexer.h
-
-Source/ThirdParty/ANGLE/src/compiler/preprocessor/Lexer.h:
