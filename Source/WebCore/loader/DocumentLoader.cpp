@@ -65,6 +65,8 @@
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 #include <wtf/unicode/Unicode.h>
+//IICDEBUG FIXME
+#include <iostream>
 
 #if ENABLE(WEB_ARCHIVE) || ENABLE(MHTML)
 #include "ArchiveFactory.h"
@@ -1138,6 +1140,7 @@ void DocumentLoader::substituteResourceDeliveryTimerFired(Timer<DocumentLoader>*
         } else {
             // A null resource means that we should fail the load.
             // FIXME: Maybe we should use another error here - something like "not in cache".
+            std::cout << "IICDEBUG: !resource" << std::endl; //FIXME
             loader->didFail(loader->cannotShowURLError());
         }
     }

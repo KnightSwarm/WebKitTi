@@ -59,6 +59,8 @@
 #include <wtf/gobject/GRefPtr.h>
 #include <wtf/text/Base64.h>
 #include <wtf/text/CString.h>
+//IICDEBUG FIXME
+#include <iostream>
 
 #if ENABLE(BLOB)
 #include "BlobData.h"
@@ -497,6 +499,7 @@ static void doRedirect(ResourceHandle* handle)
 
     cleanupSoupRequestOperation(handle);
     if (!createSoupRequestAndMessageForHandle(handle, newRequest, true)) {
+        std::cout << "IICDEBUG: !createSoupRequestAndMessageForHandle" << std::endl; //FIXME
         d->client()->cannotShowURL(handle);
         return;
     }

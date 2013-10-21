@@ -34,7 +34,7 @@ G_BEGIN_DECLS
 /**
  * WEBKITGTK_API_VERSION: (skip)
  */
-#define WEBKITGTK_API_VERSION (3.0)
+#define WEBKITGTK_API_VERSION (1.0)
 
 #define WEBKIT_CHECK_VERSION(major, minor, micro) \
   (WEBKIT_MAJOR_VERSION > (major) || \

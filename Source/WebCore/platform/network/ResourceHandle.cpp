@@ -34,6 +34,8 @@
 #include <algorithm>
 #include <wtf/MainThread.h>
 #include <wtf/text/CString.h>
+//IICDEBUG FIXME
+#include <iostream>
 
 namespace WebCore {
 
@@ -117,6 +119,7 @@ void ResourceHandle::fireFailure(Timer<ResourceHandle>*)
             client()->wasBlocked(this);
             return;
         case InvalidURLFailure:
+            std::cout << "IICDEBUG: case InvalidURLFailure" << std::endl; //FIXME
             d->m_scheduledFailureType = NoFailure;
             client()->cannotShowURL(this);
             return;
