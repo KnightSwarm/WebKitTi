@@ -187,13 +187,9 @@ void scream()
 // http://dev.w3.org/html5/spec/Overview.html#prepare-a-script
 bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, LegacyTypeSupport supportLegacyTypes)
 {
-    //IICDEBUG FIXME removeme
-    scream();
     if (m_alreadyStarted)
         return false;
 
-    //IICDEBUG FIXME removeme
-    scream();
     bool wasParserInserted;
     if (m_parserInserted) {
         wasParserInserted = true;
@@ -201,76 +197,50 @@ bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, Legac
     } else
         wasParserInserted = false;
 
-    //IICDEBUG FIXME removeme
-    scream();
     if (wasParserInserted && !asyncAttributeValue())
         m_forceAsync = true;
 
-    //IICDEBUG FIXME removeme
-    scream();
     // FIXME: HTML5 spec says we should check that all children are either comments or empty text nodes.
     if (!hasSourceAttribute() && !m_element->firstChild())
         return false;
 
-    //IICDEBUG FIXME removeme
-    scream();
     if (!m_element->inDocument())
         return false;
 
-    //IICDEBUG FIXME removeme
-    scream();
     if (!isScriptTypeSupported(supportLegacyTypes))
         return false;
 
-    //IICDEBUG FIXME removeme
-    scream();
     if (wasParserInserted) {
         m_parserInserted = true;
         m_forceAsync = false;
     }
 
-    //IICDEBUG FIXME removeme
-    scream();
     m_alreadyStarted = true;
 
-    //IICDEBUG FIXME removeme
-    scream();
     // FIXME: If script is parser inserted, verify it's still in the original document.
     Document* document = m_element->document();
 
-    //IICDEBUG FIXME removeme
-    scream();
     // FIXME: Eventually we'd like to evaluate scripts which are inserted into a
     // viewless document but this'll do for now.
     // See http://bugs.webkit.org/show_bug.cgi?id=5727
     if (!document->frame())
         return false;
 
-    //IICDEBUG FIXME removeme
-    scream();
     if (!document->frame()->script().canExecuteScripts(AboutToExecuteScript))
         return false;
 
-    //IICDEBUG FIXME removeme
-    scream();
     if (!isScriptForEventSupported())
         return false;
 
-    //IICDEBUG FIXME removeme
-    scream();
     if (!charsetAttributeValue().isEmpty())
         m_characterEncoding = charsetAttributeValue();
     else
         m_characterEncoding = document->charset();
 
-    //IICDEBUG FIXME removeme
-    scream();
     if (hasSourceAttribute())
         if (!requestScript(sourceAttributeValue()))
             return false;
 
-    //IICDEBUG FIXME removeme
-    scream();
     if (hasSourceAttribute() && deferAttributeValue() && m_parserInserted && !asyncAttributeValue()) {
         m_willExecuteWhenDocumentFinishedParsing = true;
         m_willBeParserExecuted = true;
@@ -291,8 +261,6 @@ bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, Legac
         TextPosition position = document->isInDocumentWrite() ? TextPosition() : scriptStartPosition;
         executeScript(ScriptSourceCode(scriptContent(), document->url(), position));
     }
-    //IICDEBUG FIXME removeme
-    scream();
 
     return true;
 }

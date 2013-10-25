@@ -37,6 +37,8 @@
 #include <wtf/text/CString.h>
 #include <wtf/text/StringBuilder.h>
 #include <wtf/text/StringHash.h>
+//IICDEBUG FIXME
+#include <iostream>
 
 #if USE(ICU_UNICODE)
 #include <unicode/uidna.h>
@@ -362,6 +364,7 @@ void KURL::init(const KURL& base, const String& relative, const TextEncoding& en
     // FIXME: Is this a good rule?
     if (!base.m_isValid && !base.isEmpty()) {
         m_string = relative;
+        std::cout << "IICDEBUG init invalidate" << std::endl;
         invalidate();
         return;
     }
@@ -431,6 +434,7 @@ void KURL::init(const KURL& base, const String& relative, const TextEncoding& en
                 parse(parseBuffer.data(), &relative);
             } else {
                 m_string = relative;
+                std::cout << "IICDEBUG else(absolute) invalidate | " << base.string().characters() << " | " << relative.characters() << std::endl;
                 invalidate();
             }
             return;
@@ -1072,6 +1076,7 @@ void KURL::parse(const char* url, const String* originalString)
     if (!url || url[0] == '\0') {
         // valid URL must be non-empty
         m_string = originalString ? *originalString : url;
+        std::cout << "IICDEBUG parse null(?) URL invalidate | " << url << std::endl;
         invalidate();
         return;
     }
@@ -1079,6 +1084,7 @@ void KURL::parse(const char* url, const String* originalString)
     if (!isSchemeFirstChar(url[0])) {
         // scheme must start with an alphabetic character
         m_string = originalString ? *originalString : url;
+        std::cout << "IICDEBUG parse2 invalidate | " << url << std::endl;
         invalidate();
         return;
     }
@@ -1089,6 +1095,7 @@ void KURL::parse(const char* url, const String* originalString)
 
     if (url[schemeEnd] != ':') {
         m_string = originalString ? *originalString : url;
+        std::cout << "IICDEBUG parse3 invalidate | " << url << std::endl;
         invalidate();
         return;
     }
@@ -1166,6 +1173,7 @@ void KURL::parse(const char* url, const String* originalString)
         } else {
             // invalid character
             m_string = originalString ? *originalString : url;
+            std::cout << "IICDEBUG url[userEnd] elseif else invalidate" << std::endl;
             invalidate();
             return;
         }
@@ -1182,6 +1190,7 @@ void KURL::parse(const char* url, const String* originalString)
             else {
                 // invalid character
                 m_string = originalString ? *originalString : url;
+                std::cout << "IICDEBUG url[hostEnd] invalidate" << std::endl;
                 invalidate();
                 return;
             }
@@ -1203,12 +1212,14 @@ void KURL::parse(const char* url, const String* originalString)
         if (!isPathSegmentEndChar(url[portEnd])) {
             // invalid character
             m_string = originalString ? *originalString : url;
+            std::cout << "IICDEBUG ~isPathSegmentEndChar invalidate" << std::endl;
             invalidate();
             return;
         }
 
         if (hostPortIsEmptyButCredentialsArePresent(hostStart, portEnd, url[passwordEnd])) {
             m_string = originalString ? *originalString : url;
+            std::cout << "IICDEBUG if(hostPortIsEmptyButCredentialsArePresent) invalidate" << std::endl;
             invalidate();
             return;
         }

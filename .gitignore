@@ -3,6 +3,7 @@
 *.o
 *.a
 *.Plo
+*.Po
 *.la
 DerivedSources*
 Programs*
@@ -14,4 +15,3 @@ autotoolsconfig.h
 autotoolsconfig.h.in
 config.status
 *.libs*
-*.deps*

@@ -59,6 +59,7 @@
 #include <wtf/gobject/GRefPtr.h>
 #include <wtf/text/Base64.h>
 #include <wtf/text/CString.h>
+#include "TitaniumProtocols.h"
 //IICDEBUG FIXME
 #include <iostream>
 
@@ -499,7 +500,6 @@ static void doRedirect(ResourceHandle* handle)
 
     cleanupSoupRequestOperation(handle);
     if (!createSoupRequestAndMessageForHandle(handle, newRequest, true)) {
-        std::cout << "IICDEBUG: !createSoupRequestAndMessageForHandle" << std::endl; //FIXME
         d->client()->cannotShowURL(handle);
         return;
     }
@@ -1003,16 +1003,363 @@ static bool createSoupRequestAndMessageForHandle(ResourceHandle* handle, const R
 
     d->m_soupRequest = adoptGRef(soup_session_request_uri(d->soupSession(), soupURI.get(), &error.outPtr()));
     if (error) {
+        std::cout << "IICDEBUG: if (error) | " << error->message << std::endl; //FIXME removeme
         d->m_soupRequest.clear();
         return false;
     }
 
     // SoupMessages are only applicable to HTTP-family requests.
     if (isHTTPFamilyRequest && !createSoupMessageForHandleAndRequest(handle, request)) {
+        std::cout << "IICDEBUG: isHTTPFamilyRequest && !createSoupMessageForHandleAndRequest | "
+            << isHTTPFamilyRequest << "/" << !createSoupMessageForHandleAndRequest(handle,request)
+            << std::endl;
         d->m_soupRequest.clear();
         return false;
     }
 
+    return true;
+}
+
+static void cleanupGioOperation(ResourceHandle* handle, bool isDestroying = false)
+{
+    ResourceHandleInternal* d = handle->getInternal();
+
+    if (d->m_gfile) {
+        g_object_set_data(G_OBJECT(d->m_gfile), "webkit-resource", 0);
+        //Seems no longer necessary due to automatic reference counting
+        // g_object_unref(d->m_gfile);
+        d->m_gfile = 0;
+    }
+
+    if (d->m_cancellable) {
+        //Seems no longer necessary due to automatic reference counting
+        //g_object_unref(d->m_cancellable);
+        d->m_cancellable.clear();
+    }
+
+    if (d->m_inputStream) {
+        g_object_set_data(G_OBJECT(d->m_inputStream.get()), "webkit-resource", 0);
+        //Seems no longer necessary due to automatic reference counting
+        //g_object_unref(d->m_inputStream);
+        d->m_inputStream.clear();
+    }
+
+    /*
+    if (d->m_buffer) {
+        g_free(d->m_buffer);
+        d->m_buffer = 0;
+    }
+    */
+
+    if (!isDestroying)
+        handle->deref();
+}
+
+static void closeCallback(GObject* source, GAsyncResult* res, gpointer)
+{
+    RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(source, "webkit-resource"));
+    if (!handle)
+        return;
+
+    ResourceHandleInternal* d = handle->getInternal();
+    ResourceHandleClient* client = handle->client();
+
+    g_input_stream_close_finish(d->m_inputStream.get(), res, 0);
+    cleanupGioOperation(handle.get());
+
+    // The load may have been cancelled, the client may have been
+    // destroyed already. In such cases calling didFinishLoading is a
+    // bad idea.
+    if (d->m_cancelled || !client)
+        return;
+
+    client->didFinishLoading(handle.get(), time(NULL));
+}
+/*
+static void readCallback(GObject* source, GAsyncResult* res, gpointer)
+{
+    RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(source, "webkit-resource"));
+    if (!handle)
+        return;
+
+    ResourceHandleInternal* d = handle->getInternal();
+    ResourceHandleClient* client = handle->client();
+
+    if (d->m_cancelled || !client) {
+        cleanupGioOperation(handle.get());
+        return;
+    }
+
+    GError *error = 0;
+
+    gssize bytesRead = g_input_stream_read_finish(d->m_inputStream, res, &error);
+    if (error) {
+        char* uri = g_file_get_uri(d->m_gfile);
+        ResourceError resourceError(g_quark_to_string(G_IO_ERROR),
+                                    error->code,
+                                    uri,
+                                    error ? String::fromUTF8(error->message) : String());
+        g_free(uri);
+        g_error_free(error);
+        cleanupGioOperation(handle.get());
+        client->didFail(handle.get(), resourceError);
+        return;
+    }
+
+    if (!bytesRead) {
+        g_input_stream_close_async(d->m_inputStream, G_PRIORITY_DEFAULT,
+                                   0, closeCallback, 0);
+        return;
+    }
+
+    d->m_total += bytesRead;
+    client->didReceiveData(handle.get(), d->m_buffer, bytesRead, d->m_total);
+
+    // didReceiveData may cancel the load, which may release the last reference.
+    if (d->m_cancelled) {
+        cleanupGioOperation(handle.get());
+        return;
+    }
+
+    g_input_stream_read_async(d->m_inputStream, d->m_buffer, d->m_bufferSize,
+                              G_PRIORITY_DEFAULT, d->m_cancellable,
+                              readCallback, 0);
+}
+*/
+
+static void openCallback(GObject* source, GAsyncResult* res, gpointer)
+{
+    RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(source, "webkit-resource"));
+    if (!handle)
+        return;
+
+    ResourceHandleInternal* d = handle->getInternal();
+    ResourceHandleClient* client = handle->client();
+
+    if (d->m_cancelled || !client) {
+        cleanupGioOperation(handle.get());
+        return;
+    }
+
+    GError *error = 0;
+    GFileInputStream* in = g_file_read_finish(G_FILE(source), res, &error);
+    if (error) {
+        char* uri = g_file_get_uri(d->m_gfile);
+        ResourceError resourceError(g_quark_to_string(G_IO_ERROR),
+                                    error->code,
+                                    uri,
+                                    error ? String::fromUTF8(error->message) : String());
+        g_free(uri);
+        g_error_free(error);
+        cleanupGioOperation(handle.get());
+        client->didFail(handle.get(), resourceError);
+        return;
+    }
+
+    d->m_inputStream = G_INPUT_STREAM(in);
+    d->m_readBufferSize = 8192;
+    //d->m_buffer = static_cast<char*>(g_malloc(d->m_bufferSize));
+    //d->m_total = 0; //No longer exists
+
+    g_object_set_data(G_OBJECT(d->m_inputStream.get()), "webkit-resource", handle.get());
+    //g_input_stream_read_async(d->m_inputStream, d->m_buffer, d->m_bufferSize,
+    //                          G_PRIORITY_DEFAULT, d->m_cancellable,
+    //                          readCallback, 0);
+    
+    g_input_stream_read_async(d->m_inputStream.get(), d->m_readBufferPtr, d->m_readBufferSize, G_PRIORITY_DEFAULT,
+        d->m_cancellable.get(), readCallback, 0);
+}
+
+static gboolean preprocessURL(gpointer callbackData)
+{
+    ResourceHandle* handle = static_cast<ResourceHandle*>(callbackData);
+    ResourceHandleClient* client = handle->client();
+    ResourceHandleInternal* d = handle->getInternal();
+    if (d->m_cancelled)
+        return false;
+
+    d->m_idleHandler = 0;
+
+    ASSERT(client);
+    if (!client)
+        return false;
+
+    String mimeType;
+    String data = TitaniumProtocols::Preprocess(handle->firstRequest(), mimeType);
+
+    ResourceResponse response;
+    response.setExpectedContentLength(data.length());
+
+    response.setURL(handle->firstRequest().url());
+    response.setMimeType(mimeType);
+    response.setHTTPStatusCode(200);
+    response.setHTTPStatusText("OK");
+    response.setTextEncodingName("UTF-8");
+    //response.setLastModifiedDate(time(NULL));
+    client->didReceiveResponse(handle, response);
+
+    if (d->m_cancelled)
+        return false;
+
+    if (data.length() > 0)
+        client->didReceiveData(handle, data.utf8().data(), data.length(), data.length());
+
+    if (d->m_cancelled)
+        return false;
+
+    client->didFinishLoading(handle, time(NULL));
+
+    return false;
+}
+
+static void queryInfoCallback(GObject* source, GAsyncResult* res, gpointer)
+{
+    RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(source, "webkit-resource"));
+    if (!handle)
+        return;
+
+    ResourceHandleInternal* d = handle->getInternal();
+    ResourceHandleClient* client = handle->client();
+
+    if (d->m_cancelled) {
+        cleanupGioOperation(handle.get());
+        return;
+    }
+
+    ResourceResponse response;
+
+    if (!d->m_titaniumURL) {
+        char* uri = g_file_get_uri(d->m_gfile);
+        response.setURL(KURL(KURL(), uri));
+        g_free(uri);
+    }
+
+    GError *error = 0;
+    GFileInfo* info = g_file_query_info_finish(d->m_gfile, res, &error);
+
+    if (error) {
+        // FIXME: to be able to handle ftp URIs properly, we must
+        // check if the error is G_IO_ERROR_NOT_MOUNTED, and if so,
+        // call g_file_mount_enclosing_volume() to mount the ftp
+        // server (and then keep track of the fact that we mounted it,
+        // and set a timeout to unmount it later after it's been idle
+        // for a while).
+        char* uri = g_file_get_uri(d->m_gfile);
+        ResourceError resourceError(g_quark_to_string(G_IO_ERROR),
+                                    error->code,
+                                    uri,
+                                    error ? String::fromUTF8(error->message) : String());
+        g_free(uri);
+        g_error_free(error);
+        cleanupGioOperation(handle.get());
+        client->didFail(handle.get(), resourceError);
+        return;
+    }
+
+    if (g_file_info_get_file_type(info) != G_FILE_TYPE_REGULAR) {
+        // FIXME: what if the URI points to a directory? Should we
+        // generate a listing? How? What do other backends do here?
+        char* uri = g_file_get_uri(d->m_gfile);
+        ResourceError resourceError(g_quark_to_string(G_IO_ERROR),
+                                    G_IO_ERROR_FAILED,
+                                    uri,
+                                    String());
+        g_free(uri);
+        cleanupGioOperation(handle.get());
+        client->didFail(handle.get(), resourceError);
+        return;
+    }
+
+    if (d->m_titaniumURL) {
+        KURL url = d->m_firstRequest.url();
+        KURL normalized(TitaniumProtocols::NormalizeURL(url));
+        if (strcmp(normalized.string().utf8().data(), url.string().utf8().data())) {
+
+            response.setURL(url);
+            response.setHTTPStatusCode(200);
+            response.setHTTPStatusText("Permanently Moved");
+            response.setHTTPHeaderField("Location", normalized.string().utf8().data());
+
+            ResourceRequest newRequest = handle->firstRequest();
+            newRequest.setURL(normalized);
+            if (d->client())
+                d->client()->willSendRequest(handle.get(), newRequest, response);
+
+        } else {
+            response.setURL(KURL(KURL(), d->m_titaniumURL));
+            response.setHTTPStatusCode(200);
+            response.setHTTPStatusText("OK");
+        }
+    }
+
+    response.setMimeType(g_file_info_get_content_type(info));
+    response.setExpectedContentLength(g_file_info_get_size(info));
+
+    GTimeVal tv;
+    g_file_info_get_modification_time(info, &tv);
+    //response.setLastModifiedDate(tv.tv_sec); //No longer exists
+
+    client->didReceiveResponse(handle.get(), response);
+
+    if (d->m_cancelled) {
+        cleanupGioOperation(handle.get());
+        return;
+    }
+
+    g_file_read_async(d->m_gfile, G_PRIORITY_DEFAULT, d->m_cancellable.get(),
+                      openCallback, 0);
+}
+
+static bool startGio(ResourceHandle* handle, KURL url)
+{
+    ASSERT(handle);
+
+    ResourceHandleInternal* d = handle->getInternal();
+
+    if (handle->firstRequest().httpMethod() != "GET" && handle->firstRequest().httpMethod() != "POST")
+        return false;
+
+    // GIO doesn't know how to handle refs and queries, so remove them
+    // TODO: use KURL.fileSystemPath after KURLGtk and FileSystemGtk are
+    // using GIO internally, and providing URIs instead of file paths
+    url.removeFragmentIdentifier();
+    url.setQuery(String());
+    url.removePort();
+
+#if !OS(WINDOWS)
+    // we avoid the escaping for local files, because
+    // g_filename_from_uri (used internally by GFile) has problems
+    // decoding strings with arbitrary percent signs
+    if (url.isLocalFile())
+        d->m_gfile = g_file_new_for_path(url.string().utf8().data() + sizeof("file://") - 1);
+    else
+#endif
+        d->m_gfile = g_file_new_for_uri(url.string().utf8().data());
+    g_object_set_data(G_OBJECT(d->m_gfile), "webkit-resource", handle);
+
+    // balanced by a deref() in cleanupGioOperation, which should always run
+    handle->ref();
+
+    d->m_cancellable = g_cancellable_new();
+    g_file_query_info_async(d->m_gfile,
+                            G_FILE_ATTRIBUTE_STANDARD_TYPE ","
+                            G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE ","
+                            G_FILE_ATTRIBUTE_STANDARD_SIZE,
+                            G_FILE_QUERY_INFO_NONE,
+                            G_PRIORITY_DEFAULT, d->m_cancellable.get(),
+                            queryInfoCallback, 0);
+    return true;
+}
+
+static bool startPreprocessed(ResourceHandle* handle)
+{
+    ASSERT(handle);
+
+    ResourceHandleInternal* d = handle->getInternal();
+
+    // If preprocessURL is called synchronously the job is not yet effectively started
+    // and webkit won't never know that the data has been parsed even didFinishLoading is called.
+    d->m_idleHandler = g_idle_add(preprocessURL, handle);
     return true;
 }
 
@@ -1030,10 +1377,39 @@ bool ResourceHandle::start()
 
     // Only allow the POST and GET methods for non-HTTP requests.
     const ResourceRequest& request = firstRequest();
+    //DEBUG FIXME removeme
+    std::cout << "IICDEBUG start: " 
+        << request.url().string().ascii().data() << " | " 
+        << request.url().protocol().ascii().data() 
+        << std::endl;
     bool isHTTPFamilyRequest = request.url().protocolIsInHTTPFamily();
-    if (!isHTTPFamilyRequest && request.httpMethod() != "GET" && request.httpMethod() != "POST") {
-        this->scheduleFailure(InvalidURLFailure); // Error must not be reported immediately
-        return true;
+    if (!isHTTPFamilyRequest && request.httpMethod() != "GET" && request.httpMethod() != "POST")
+    {
+        //if (equalIgnoringCase(request.url().protocol(), "app") || equalIgnoringCase(request.url().protocol(), "ti")); //Continue
+        //else
+        {
+            std::cout << "This shouldn't be reached!?" << std::endl;
+            this->scheduleFailure(InvalidURLFailure); // Error must not be reported immediately
+            return true;
+        }
+    }
+    
+    KURL url = request.url();
+    String urlString = url.string();
+    String protocol = url.protocol();
+    if (equalIgnoringCase(request.url().protocol(), "app") || equalIgnoringCase(request.url().protocol(), "ti"))
+    {
+        KURL normalized(TitaniumProtocols::NormalizeURL(url));
+        bool isNormalized = strcmp(normalized.string().utf8().data(), url.string().utf8().data()) == 0;
+
+        if (isNormalized && TitaniumProtocols::CanPreprocess(request)) {
+            return startPreprocessed(this);
+
+        } else {
+            d->m_titaniumURL = strdup(url.string().utf8().data());
+            KURL fileURL = TitaniumProtocols::URLToFileURL(url);
+            return startGio(this, fileURL);
+        }
     }
 
     applyAuthenticationToRequest(this, firstRequest(), false);

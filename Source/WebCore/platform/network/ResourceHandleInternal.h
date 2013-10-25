@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2004, 2006 Apple Computer, Inc.  All rights reserved.
+ * Copyright (C) 2013 Knightswarm Handelsbolag
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -117,6 +118,8 @@ namespace WebCore {
             , m_bodySize(0)
             , m_bodyDataSent(0)
             , m_redirectCount(0)
+            , m_idleHandler(0)
+            , m_gfile(0)
 #endif
 #if PLATFORM(QT)
             , m_job(0)
@@ -128,6 +131,7 @@ namespace WebCore {
 #endif
             , m_scheduledFailureType(ResourceHandle::NoFailure)
             , m_failureTimer(loader, &ResourceHandle::fireFailure)
+            , m_titaniumURL(0)
         {
             const KURL& url = m_firstRequest.url();
             m_user = url.user();
@@ -208,6 +212,8 @@ namespace WebCore {
         unsigned long m_bodyDataSent;
         SoupSession* soupSession();
         int m_redirectCount;
+        guint m_idleHandler;
+        GFile *m_gfile;
 #endif
 #if PLATFORM(GTK)
         struct {
@@ -234,6 +240,7 @@ namespace WebCore {
 
         ResourceHandle::FailureType m_scheduledFailureType;
         Timer<ResourceHandle> m_failureTimer;
+        char *m_titaniumURL;
     };
 
 } // namespace WebCore

@@ -71,6 +71,7 @@ ResourceHandle::ResourceHandle(NetworkingContext* context, const ResourceRequest
     : d(adoptPtr(new ResourceHandleInternal(this, context, request, client, defersLoading, shouldContentSniff && shouldContentSniffURL(request.url()))))
 {
     if (!request.url().isValid()) {
+        std::cout << "IICDEBUG: " << request.url().string().characters() << std::endl; //IICDEBUG FIXME
         scheduleFailure(InvalidURLFailure);
         return;
     }

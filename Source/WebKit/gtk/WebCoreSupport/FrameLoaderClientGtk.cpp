@@ -111,6 +111,8 @@ FrameLoaderClient::FrameLoaderClient(WebKitWebFrame* frame)
     , m_pluginView(0)
     , m_hasSentResponseToPlugin(false)
 {
+    //SecurityOrigin::registerURLSchemeAsLocal(String("app", strlen("app")));
+    //SecurityOrigin::registerURLSchemeAsLocal(String("ti", strlen("ti"))); 
 }
 
 FrameLoaderClient::~FrameLoaderClient()
