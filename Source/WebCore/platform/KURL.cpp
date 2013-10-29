@@ -364,7 +364,6 @@ void KURL::init(const KURL& base, const String& relative, const TextEncoding& en
     // FIXME: Is this a good rule?
     if (!base.m_isValid && !base.isEmpty()) {
         m_string = relative;
-        std::cout << "IICDEBUG init invalidate" << std::endl;
         invalidate();
         return;
     }

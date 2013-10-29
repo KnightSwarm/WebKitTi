@@ -9,6 +9,7 @@
  * Copyright (C) 2009, 2010, 2011, 2012 Igalia S.L.
  * Copyright (C) 2009 John Kjellberg <john.kjellberg@power.alstom.com>
  * Copyright (C) 2012 Intel Corporation
+ * Copyright (C) 2013 Knightswarm Handelsbolag
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -60,8 +61,21 @@
 #include <wtf/text/Base64.h>
 #include <wtf/text/CString.h>
 #include "TitaniumProtocols.h"
-//IICDEBUG FIXME
+//IICDEBUG FIXME removeme
 #include <iostream>
+#define SPEW(X) std::cout << # X " = " << (X) << std::endl;
+#define SPEW2(X) std::cout << # X " = " << (X.utf8().data()) << std::endl;
+namespace WebCore
+{
+void doSpew(WTF::String &string)
+{
+    SPEW(string.utf8().data());
+}
+void doSpew2(WTF::String &string)
+{
+    SPEW2(string);
+}
+}
 
 #if ENABLE(BLOB)
 #include "BlobData.h"
@@ -1325,16 +1339,20 @@ static bool startGio(ResourceHandle* handle, KURL url)
     url.removeFragmentIdentifier();
     url.setQuery(String());
     url.removePort();
+    std::cout << "IICDEBUG startGio: " << url.string().utf8().data() << " || " 
+        << (url.string().utf8().data() + sizeof("file://")) << std::endl;
 
 #if !OS(WINDOWS)
     // we avoid the escaping for local files, because
     // g_filename_from_uri (used internally by GFile) has problems
     // decoding strings with arbitrary percent signs
     if (url.isLocalFile())
-        d->m_gfile = g_file_new_for_path(url.string().utf8().data() + sizeof("file://") - 1);
+        //d->m_gfile = g_file_new_for_path(url.string().utf8().data() + sizeof("file://") - 1);
+        d->m_gfile = g_file_new_for_path(url.fileSystemPath().utf8().data() + sizeof("file://") - 1);
     else
 #endif
-        d->m_gfile = g_file_new_for_uri(url.string().utf8().data());
+        //d->m_gfile = g_file_new_for_uri(url.string().utf8().data());
+        d->m_gfile = g_file_new_for_uri(url.fileSystemPath().utf8().data());
     g_object_set_data(G_OBJECT(d->m_gfile), "webkit-resource", handle);
 
     // balanced by a deref() in cleanupGioOperation, which should always run
