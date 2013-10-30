@@ -1143,6 +1143,7 @@ static void readCallback(GObject* source, GAsyncResult* res, gpointer)
 
 static void openCallback(GObject* source, GAsyncResult* res, gpointer)
 {
+    std::cout << "IICDEBUG oCB" << std::endl;
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(source, "webkit-resource"));
     if (!handle)
         return;
@@ -1179,9 +1180,11 @@ static void openCallback(GObject* source, GAsyncResult* res, gpointer)
     //g_input_stream_read_async(d->m_inputStream, d->m_buffer, d->m_bufferSize,
     //                          G_PRIORITY_DEFAULT, d->m_cancellable,
     //                          readCallback, 0);
-    
+    std::cout << "IICDEBUG TEST0" << std::endl;
+    handle->ensureReadBuffer();
+    std::cout << "IICDEBUG TEST1" << std::endl;
     g_input_stream_read_async(d->m_inputStream.get(), d->m_readBufferPtr, d->m_readBufferSize, G_PRIORITY_DEFAULT,
-        d->m_cancellable.get(), readCallback, 0);
+        d->m_cancellable.get(), readCallback, handle.get());
 }
 
 static gboolean preprocessURL(gpointer callbackData)
@@ -1321,6 +1324,7 @@ static void queryInfoCallback(GObject* source, GAsyncResult* res, gpointer)
         return;
     }
 
+    std::cout << "IICDEBUG qIC calling gfra" << std::endl;
     g_file_read_async(d->m_gfile, G_PRIORITY_DEFAULT, d->m_cancellable.get(),
                       openCallback, 0);
 }
