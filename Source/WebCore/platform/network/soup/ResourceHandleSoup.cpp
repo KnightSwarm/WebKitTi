@@ -1228,6 +1228,7 @@ static gboolean preprocessURL(gpointer callbackData)
 
 static void queryInfoCallback(GObject* source, GAsyncResult* res, gpointer)
 {
+    std::cout << "IICDEBUG qIC start" << std::endl;
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(source, "webkit-resource"));
     if (!handle)
         return;
@@ -1339,8 +1340,12 @@ static bool startGio(ResourceHandle* handle, KURL url)
     url.removeFragmentIdentifier();
     url.setQuery(String());
     url.removePort();
-    std::cout << "IICDEBUG startGio: " << url.string().utf8().data() << " || " 
-        << (url.string().utf8().data() + sizeof("file://")) << std::endl;
+    std::cout << "IICDEBUG startGio: " << url.string().utf8().data()
+        << " || " 
+        << (url.fileSystemPath().utf8().data() + sizeof("file://") - 1)
+        << " || " 
+        << url.fileSystemPath().utf8().data()
+        << std::endl;
 
 #if !OS(WINDOWS)
     // we avoid the escaping for local files, because
@@ -1348,17 +1353,18 @@ static bool startGio(ResourceHandle* handle, KURL url)
     // decoding strings with arbitrary percent signs
     if (url.isLocalFile())
         //d->m_gfile = g_file_new_for_path(url.string().utf8().data() + sizeof("file://") - 1);
-        d->m_gfile = g_file_new_for_path(url.fileSystemPath().utf8().data() + sizeof("file://") - 1);
+        d->m_gfile = g_file_new_for_path(url.fileSystemPath().utf8().data());// + sizeof("file://") - 1);
     else
 #endif
-        //d->m_gfile = g_file_new_for_uri(url.string().utf8().data());
-        d->m_gfile = g_file_new_for_uri(url.fileSystemPath().utf8().data());
+        d->m_gfile = g_file_new_for_uri(url.string().utf8().data());
+        //d->m_gfile = g_file_new_for_uri(url.fileSystemPath().utf8().data()); //Maybe not correct here
     g_object_set_data(G_OBJECT(d->m_gfile), "webkit-resource", handle);
 
     // balanced by a deref() in cleanupGioOperation, which should always run
     handle->ref();
 
     d->m_cancellable = g_cancellable_new();
+    std::cout << "IICDEBUG m_gfile path: " << g_file_get_path(d->m_gfile) << std::endl;
     g_file_query_info_async(d->m_gfile,
                             G_FILE_ATTRIBUTE_STANDARD_TYPE ","
                             G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE ","

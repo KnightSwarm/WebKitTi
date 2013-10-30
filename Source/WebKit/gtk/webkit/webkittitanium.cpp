@@ -14,8 +14,6 @@
 #include "ScriptElement.h"
 #include "InspectorClientGtk.h"
 #include "TitaniumProtocols.h"
-//FIXME removeme
-#include <iostream>
 
 namespace WebCore {
     //class String;
@@ -28,12 +26,6 @@ void webkit_titanium_set_normalize_url_cb(NormalizeURLCallback cb) {
 
 void webkit_titanium_set_url_to_file_url_cb(URLToFileURLCallback cb) {
     WebCore::TitaniumProtocols::URLCallback = cb;
-    
-    std::string testy{"app://testex.html"};
-    char* buffer = new char[4096];
-    cb(testy.c_str(), buffer, 4096);
-    std::cout << "IICDEBUG wtsutfuc; test: " << buffer << std::endl;
-    delete [] buffer;
 }
 
 void webkit_titanium_set_can_preprocess_cb(CanPreprocessURLCallback cb) {
