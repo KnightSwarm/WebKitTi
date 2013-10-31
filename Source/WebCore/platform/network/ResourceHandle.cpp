@@ -34,8 +34,6 @@
 #include <algorithm>
 #include <wtf/MainThread.h>
 #include <wtf/text/CString.h>
-//IICDEBUG FIXME
-#include <iostream>
 
 namespace WebCore {
 
@@ -71,7 +69,6 @@ ResourceHandle::ResourceHandle(NetworkingContext* context, const ResourceRequest
     : d(adoptPtr(new ResourceHandleInternal(this, context, request, client, defersLoading, shouldContentSniff && shouldContentSniffURL(request.url()))))
 {
     if (!request.url().isValid()) {
-        std::cout << "IICDEBUG: " << request.url().string().characters() << std::endl; //IICDEBUG FIXME
         scheduleFailure(InvalidURLFailure);
         return;
     }
@@ -120,7 +117,6 @@ void ResourceHandle::fireFailure(Timer<ResourceHandle>*)
             client()->wasBlocked(this);
             return;
         case InvalidURLFailure:
-            std::cout << "IICDEBUG: case InvalidURLFailure" << std::endl; //FIXME
             d->m_scheduledFailureType = NoFailure;
             client()->cannotShowURL(this);
             return;

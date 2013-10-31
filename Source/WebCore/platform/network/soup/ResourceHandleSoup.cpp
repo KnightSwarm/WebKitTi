@@ -1017,16 +1017,12 @@ static bool createSoupRequestAndMessageForHandle(ResourceHandle* handle, const R
 
     d->m_soupRequest = adoptGRef(soup_session_request_uri(d->soupSession(), soupURI.get(), &error.outPtr()));
     if (error) {
-        std::cout << "IICDEBUG: if (error) | " << error->message << std::endl; //FIXME removeme
         d->m_soupRequest.clear();
         return false;
     }
 
     // SoupMessages are only applicable to HTTP-family requests.
     if (isHTTPFamilyRequest && !createSoupMessageForHandleAndRequest(handle, request)) {
-        std::cout << "IICDEBUG: isHTTPFamilyRequest && !createSoupMessageForHandleAndRequest | "
-            << isHTTPFamilyRequest << "/" << !createSoupMessageForHandleAndRequest(handle,request)
-            << std::endl;
         d->m_soupRequest.clear();
         return false;
     }
@@ -1089,8 +1085,8 @@ static void closeCallback(GObject* source, GAsyncResult* res, gpointer)
 
     client->didFinishLoading(handle.get(), time(NULL));
 }
-/*
-static void readCallback(GObject* source, GAsyncResult* res, gpointer)
+
+static void gioReadCallback(GObject* source, GAsyncResult* res, gpointer)
 {
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(source, "webkit-resource"));
     if (!handle)
@@ -1106,7 +1102,7 @@ static void readCallback(GObject* source, GAsyncResult* res, gpointer)
 
     GError *error = 0;
 
-    gssize bytesRead = g_input_stream_read_finish(d->m_inputStream, res, &error);
+    gssize bytesRead = g_input_stream_read_finish(d->m_inputStream.get(), res, &error);
     if (error) {
         char* uri = g_file_get_uri(d->m_gfile);
         ResourceError resourceError(g_quark_to_string(G_IO_ERROR),
@@ -1121,13 +1117,14 @@ static void readCallback(GObject* source, GAsyncResult* res, gpointer)
     }
 
     if (!bytesRead) {
-        g_input_stream_close_async(d->m_inputStream, G_PRIORITY_DEFAULT,
+        g_input_stream_close_async(d->m_inputStream.get(), G_PRIORITY_DEFAULT,
                                    0, closeCallback, 0);
         return;
     }
 
-    d->m_total += bytesRead;
-    client->didReceiveData(handle.get(), d->m_buffer, bytesRead, d->m_total);
+    //d->m_total += bytesRead;
+    //client->didReceiveData(handle.get(), d->m_readBufferPtr, bytesRead, d->m_total);
+    client->didReceiveData(handle.get(), d->m_readBufferPtr, bytesRead, bytesRead);
 
     // didReceiveData may cancel the load, which may release the last reference.
     if (d->m_cancelled) {
@@ -1135,15 +1132,14 @@ static void readCallback(GObject* source, GAsyncResult* res, gpointer)
         return;
     }
 
-    g_input_stream_read_async(d->m_inputStream, d->m_buffer, d->m_bufferSize,
-                              G_PRIORITY_DEFAULT, d->m_cancellable,
-                              readCallback, 0);
+    handle->ensureReadBuffer();
+    g_input_stream_read_async(d->m_inputStream.get(), d->m_readBufferPtr, d->m_readBufferSize,
+                              G_PRIORITY_DEFAULT, d->m_cancellable.get(),
+                              gioReadCallback, handle.get());
 }
-*/
 
 static void openCallback(GObject* source, GAsyncResult* res, gpointer)
 {
-    std::cout << "IICDEBUG oCB" << std::endl;
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(source, "webkit-resource"));
     if (!handle)
         return;
@@ -1180,11 +1176,9 @@ static void openCallback(GObject* source, GAsyncResult* res, gpointer)
     //g_input_stream_read_async(d->m_inputStream, d->m_buffer, d->m_bufferSize,
     //                          G_PRIORITY_DEFAULT, d->m_cancellable,
     //                          readCallback, 0);
-    std::cout << "IICDEBUG TEST0" << std::endl;
     handle->ensureReadBuffer();
-    std::cout << "IICDEBUG TEST1" << std::endl;
     g_input_stream_read_async(d->m_inputStream.get(), d->m_readBufferPtr, d->m_readBufferSize, G_PRIORITY_DEFAULT,
-        d->m_cancellable.get(), readCallback, handle.get());
+        d->m_cancellable.get(), gioReadCallback, handle.get());
 }
 
 static gboolean preprocessURL(gpointer callbackData)
@@ -1231,7 +1225,6 @@ static gboolean preprocessURL(gpointer callbackData)
 
 static void queryInfoCallback(GObject* source, GAsyncResult* res, gpointer)
 {
-    std::cout << "IICDEBUG qIC start" << std::endl;
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(source, "webkit-resource"));
     if (!handle)
         return;
@@ -1324,7 +1317,6 @@ static void queryInfoCallback(GObject* source, GAsyncResult* res, gpointer)
         return;
     }
 
-    std::cout << "IICDEBUG qIC calling gfra" << std::endl;
     g_file_read_async(d->m_gfile, G_PRIORITY_DEFAULT, d->m_cancellable.get(),
                       openCallback, 0);
 }
@@ -1344,10 +1336,7 @@ static bool startGio(ResourceHandle* handle, KURL url)
     url.removeFragmentIdentifier();
     url.setQuery(String());
     url.removePort();
-    std::cout << "IICDEBUG startGio: " << url.string().utf8().data()
-        << " || " 
-        << (url.fileSystemPath().utf8().data() + sizeof("file://") - 1)
-        << " || " 
+    std::cout << "IICDEBUG startGio: "
         << url.fileSystemPath().utf8().data()
         << std::endl;
 
@@ -1368,7 +1357,6 @@ static bool startGio(ResourceHandle* handle, KURL url)
     handle->ref();
 
     d->m_cancellable = g_cancellable_new();
-    std::cout << "IICDEBUG m_gfile path: " << g_file_get_path(d->m_gfile) << std::endl;
     g_file_query_info_async(d->m_gfile,
                             G_FILE_ATTRIBUTE_STANDARD_TYPE ","
                             G_FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE ","
@@ -1405,21 +1393,16 @@ bool ResourceHandle::start()
 
     // Only allow the POST and GET methods for non-HTTP requests.
     const ResourceRequest& request = firstRequest();
-    //DEBUG FIXME removeme
-    std::cout << "IICDEBUG start: " 
-        << request.url().string().ascii().data() << " | " 
-        << request.url().protocol().ascii().data() 
-        << std::endl;
     bool isHTTPFamilyRequest = request.url().protocolIsInHTTPFamily();
     if (!isHTTPFamilyRequest && request.httpMethod() != "GET" && request.httpMethod() != "POST")
     {
         //if (equalIgnoringCase(request.url().protocol(), "app") || equalIgnoringCase(request.url().protocol(), "ti")); //Continue
         //else
-        {
-            std::cout << "This shouldn't be reached!?" << std::endl;
+        //{
+        //    std::cout << "IICDEBUG: This shouldn't be reached!?" << std::endl;
             this->scheduleFailure(InvalidURLFailure); // Error must not be reported immediately
             return true;
-        }
+        //}
     }
     
     KURL url = request.url();

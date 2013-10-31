@@ -57,7 +57,7 @@
 #include <wtf/text/TextPosition.h>
 //Ti
 #include "ScriptEvaluator.h"
-//IICDEBUG FIXME
+//IICDEBUG
 #include <iostream>
 
 #if ENABLE(SVG)
@@ -173,15 +173,8 @@ bool ScriptElement::isScriptTypeSupported(LegacyTypeSupport supportLegacyTypes) 
         return true;
     else if (language.lower() == "python" || language.lower() == "php" || language.lower() == "ruby")
         return true;
-    std::cout << "Unsupported language: " << type.characters() << " " << language.characters() << std::endl; //IICDEBUG FIXME
+    std::cout << "ERROR: Unsupported language: " << type.utf8().data() << " " << language.utf8().data() << std::endl; //IICDEBUG
     return false;
-}
-
-//IICDEBUG FIXME removeme
-void scream()
-{
-    static int count = 0;
-    std::cout << count++ << std::endl;
 }
 
 // http://dev.w3.org/html5/spec/Overview.html#prepare-a-script
