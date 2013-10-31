@@ -14,6 +14,8 @@
 #include "ScriptElement.h"
 #include "InspectorClientGtk.h"
 #include "TitaniumProtocols.h"
+//IICDEBUG FIXME removeme
+#include <iostream>
 
 namespace WebCore {
     //class String;
@@ -56,9 +58,11 @@ class EvaluatorAdapter : public WebCore::ScriptEvaluator {
             return evaluator->matchesMimeType(mimeType.utf8().data());
         }
 
-        void evaluate(const WTF::String &mimeType, const WebCore::ScriptSourceCode& sourceCode, void *context) {
-            evaluator->evaluate(mimeType.utf8().data(), sourceCode.jsSourceCode().toString().ascii().data(), context);
-
+        void evaluate(const WTF::String &mimeType, const WebCore::ScriptSourceCode& sourceCode, void *context)
+        {
+            //std::cout << "IICDEBUG sourceCode ASCII: " << sourceCode.jsSourceCode().toString().ascii().data() << std::endl; //ASCII screws up \n and \t somehow
+            //std::cout << "IICDEBUG sourceCode UTF-8: " << sourceCode.jsSourceCode().toString().utf8().data() << std::endl;
+            evaluator->evaluate(mimeType.utf8().data(), sourceCode.jsSourceCode().toString().utf8().data(), context);
         }
 };
 

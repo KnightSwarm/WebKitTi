@@ -165,15 +165,22 @@ bool ScriptElement::isScriptTypeSupported(LegacyTypeSupport supportLegacyTypes) 
     String language = languageAttributeValue();
     if (type.isEmpty() && language.isEmpty())
         return true; // Assume text/javascript.
-    if (type.isEmpty()) {
+    if (type.isEmpty())
+    {
         type = "text/" + language.lower();
         if (MIMETypeRegistry::isSupportedJavaScriptMIMEType(type) || isLegacySupportedJavaScriptLanguage(language))
             return true;
-    } else if (MIMETypeRegistry::isSupportedJavaScriptMIMEType(type.stripWhiteSpace().lower()) || (supportLegacyTypes == AllowLegacyTypeInTypeAttribute && isLegacySupportedJavaScriptLanguage(type)))
+    }
+    else if (MIMETypeRegistry::isSupportedJavaScriptMIMEType(type.stripWhiteSpace().lower())
+                || (supportLegacyTypes == AllowLegacyTypeInTypeAttribute && isLegacySupportedJavaScriptLanguage(type)))
+    {
         return true;
+    }
     else if (language.lower() == "python" || language.lower() == "php" || language.lower() == "ruby")
         return true;
-    std::cout << "ERROR: Unsupported language: " << type.utf8().data() << " " << language.utf8().data() << std::endl; //IICDEBUG
+    else if (type.lower() == "text/python" || type.lower() == "text/php" || type.lower() == "text/ruby")
+        return true;
+    std::cout << "ERROR: Unsupported language: " << type.utf8().data() << " || " << language.utf8().data() << std::endl; //IICDEBUG
     return false;
 }
 

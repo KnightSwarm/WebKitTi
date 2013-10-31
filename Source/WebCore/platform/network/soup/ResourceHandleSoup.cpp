@@ -1086,8 +1086,9 @@ static void closeCallback(GObject* source, GAsyncResult* res, gpointer)
     client->didFinishLoading(handle.get(), time(NULL));
 }
 
-static void gioReadCallback(GObject* source, GAsyncResult* res, gpointer)
+static void gioReadCallback(GObject* source, GAsyncResult* res, gpointer data)
 {
+    int *totalBytesRead = static_cast<int*>(data);
     RefPtr<ResourceHandle> handle = static_cast<ResourceHandle*>(g_object_get_data(source, "webkit-resource"));
     if (!handle)
         return;
@@ -1117,17 +1118,21 @@ static void gioReadCallback(GObject* source, GAsyncResult* res, gpointer)
     }
 
     if (!bytesRead) {
+        delete totalBytesRead;
         g_input_stream_close_async(d->m_inputStream.get(), G_PRIORITY_DEFAULT,
                                    0, closeCallback, 0);
         return;
     }
 
     //d->m_total += bytesRead;
+    *(totalBytesRead) += bytesRead;
     //client->didReceiveData(handle.get(), d->m_readBufferPtr, bytesRead, d->m_total);
-    client->didReceiveData(handle.get(), d->m_readBufferPtr, bytesRead, bytesRead);
+    //client->didReceiveData(handle.get(), d->m_readBufferPtr, bytesRead, bytesRead);
+    client->didReceiveData(handle.get(), d->m_readBufferPtr, bytesRead, *totalBytesRead);
 
     // didReceiveData may cancel the load, which may release the last reference.
     if (d->m_cancelled) {
+        delete totalBytesRead;
         cleanupGioOperation(handle.get());
         return;
     }
@@ -1135,7 +1140,7 @@ static void gioReadCallback(GObject* source, GAsyncResult* res, gpointer)
     handle->ensureReadBuffer();
     g_input_stream_read_async(d->m_inputStream.get(), d->m_readBufferPtr, d->m_readBufferSize,
                               G_PRIORITY_DEFAULT, d->m_cancellable.get(),
-                              gioReadCallback, handle.get());
+                              gioReadCallback, totalBytesRead);
 }
 
 static void openCallback(GObject* source, GAsyncResult* res, gpointer)
@@ -1178,7 +1183,7 @@ static void openCallback(GObject* source, GAsyncResult* res, gpointer)
     //                          readCallback, 0);
     handle->ensureReadBuffer();
     g_input_stream_read_async(d->m_inputStream.get(), d->m_readBufferPtr, d->m_readBufferSize, G_PRIORITY_DEFAULT,
-        d->m_cancellable.get(), gioReadCallback, handle.get());
+        d->m_cancellable.get(), gioReadCallback, new uint_fast32_t{0});
 }
 
 static gboolean preprocessURL(gpointer callbackData)
