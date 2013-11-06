@@ -1,0 +1,1 @@
+To produce libwebkitti.so or libwebkittitanium.so or whatever, just copy/rename/symlink/whatever .libs/libwebkitgtk(whatever).so to that. And stuff. Will work that stuff out later.

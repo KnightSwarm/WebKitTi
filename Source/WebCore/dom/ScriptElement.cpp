@@ -188,13 +188,18 @@ bool ScriptElement::isScriptTypeSupported(LegacyTypeSupport supportLegacyTypes) 
 bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, LegacyTypeSupport supportLegacyTypes)
 {
     if (m_alreadyStarted)
+    {
+        std::cout << "IICDEBUG 0" << std::endl;
         return false;
+    }
 
     bool wasParserInserted;
-    if (m_parserInserted) {
+    if (m_parserInserted)
+    {
         wasParserInserted = true;
         m_parserInserted = false;
-    } else
+    }
+    else
         wasParserInserted = false;
 
     if (wasParserInserted && !asyncAttributeValue())
@@ -202,13 +207,22 @@ bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, Legac
 
     // FIXME: HTML5 spec says we should check that all children are either comments or empty text nodes.
     if (!hasSourceAttribute() && !m_element->firstChild())
+    {
+        std::cout << "IICDEBUG 1" << std::endl;
         return false;
+    }
 
     if (!m_element->inDocument())
+    {
+        std::cout << "IICDEBUG 2" << std::endl;
         return false;
+    }
 
     if (!isScriptTypeSupported(supportLegacyTypes))
+    {
+        std::cout << "IICDEBUG 3" << std::endl;
         return false;
+    }
 
     if (wasParserInserted) {
         m_parserInserted = true;
@@ -227,10 +241,16 @@ bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, Legac
         return false;
 
     if (!document->frame()->script().canExecuteScripts(AboutToExecuteScript))
+    {
+        std::cout << "IICDEBUG 4" << std::endl;
         return false;
+    }
 
     if (!isScriptForEventSupported())
+    {
+        std::cout << "IICDEBUG 5" << std::endl;
         return false;
+    }
 
     if (!charsetAttributeValue().isEmpty())
         m_characterEncoding = charsetAttributeValue();
@@ -239,7 +259,10 @@ bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, Legac
 
     if (hasSourceAttribute())
         if (!requestScript(sourceAttributeValue()))
+        {
+        std::cout << "IICDEBUG 6" << std::endl;
             return false;
+        }
 
     if (hasSourceAttribute() && deferAttributeValue() && m_parserInserted && !asyncAttributeValue()) {
         m_willExecuteWhenDocumentFinishedParsing = true;
@@ -329,13 +352,19 @@ void ScriptElement::executeScript(const ScriptSourceCode& sourceCode)
     ASSERT(m_alreadyStarted);
 
     if (m_evaluated || sourceCode.isEmpty())
-        return;
+    {
+        return; //Getting m_evaluated for non-eval'd code??
+    }
 
     if (!m_element->document()->contentSecurityPolicy()->allowScriptNonce(m_element->fastGetAttribute(HTMLNames::nonceAttr), m_element->document()->url(), m_startLineNumber))
+    {
         return;
+    }
 
     if (!m_isExternalScript && !m_element->document()->contentSecurityPolicy()->allowInlineScript(m_element->document()->url(), m_startLineNumber))
+    {
         return;
+    }
 
 #if ENABLE(NOSNIFF)
     if (m_isExternalScript && m_cachedScript && !m_cachedScript->mimeTypeAllowedByNosniff()) {
@@ -348,20 +377,30 @@ void ScriptElement::executeScript(const ScriptSourceCode& sourceCode)
     if (!shouldExecuteAsJavaScript())
     {
         Frame *frame = m_element->document()->frame();
-        if (!frame) return;
+        if (!frame)
+        {
+            //DEBUG
+            m_element->document()->addConsoleMessage(OtherMessageSource, ErrorMessageLevel, "!frame");
+            return;
+        }
         
         for (size_t i = 0; i < ScriptElement::evaluators.size(); i++)
         {
             ScriptEvaluator* evaluator = ScriptElement::evaluators.at(i);
             if (!evaluator || !evaluator->matchesMimeType(typeAttributeValue()))
+            {
                 continue;
+            }
+            std::cout << "IICDEBUG iter" << std::endl;
 
             m_evaluated = true;
             evaluator->evaluate(typeAttributeValue(), sourceCode,
                 frame->script().windowShell(mainThreadNormalWorld())->window()->globalExec());
-            //Document::updateStyleForAllDocuments(); //Needed?
+            //Document::updateStyleForAllDocuments(); //Needed? Trying:
+            frame->document()->updateStyleIfNeeded();
             return;
         }
+        return;
     }
 
     RefPtr<Document> document = m_element->document();
@@ -379,7 +418,8 @@ void ScriptElement::executeScript(const ScriptSourceCode& sourceCode)
         // block's source and the script block's type.
         // Note: This is where the script is compiled and actually executed.
         frame->script().evaluate(sourceCode);
-        //Document::updateStyleForAllDocuments(); //Needed?
+        //Document::updateStyleForAllDocuments(); //Needed? Trying:
+        frame->document()->updateStyleIfNeeded();
     }
 }
 

@@ -61,7 +61,7 @@ class EvaluatorAdapter : public WebCore::ScriptEvaluator {
         void evaluate(const WTF::String &mimeType, const WebCore::ScriptSourceCode& sourceCode, void *context)
         {
             //std::cout << "IICDEBUG sourceCode ASCII: " << sourceCode.jsSourceCode().toString().ascii().data() << std::endl; //ASCII screws up \n and \t somehow
-            //std::cout << "IICDEBUG sourceCode UTF-8: " << sourceCode.jsSourceCode().toString().utf8().data() << std::endl;
+            std::cout << "IICDEBUG sourceCode UTF-8: " << sourceCode.jsSourceCode().toString().utf8().data() << std::endl;
             evaluator->evaluate(mimeType.utf8().data(), sourceCode.jsSourceCode().toString().utf8().data(), context);
         }
 };
