@@ -146,7 +146,7 @@ endif
 %:: SCCS/s.%
 
 global_cppflags += \
-	-Wp,-w -Wall -W -Wcast-align -Wchar-subscripts -Wreturn-type \
+	-fno-inline -g3 -ggdb -O0 -Wp,-w -Wall -W -Wcast-align -Wchar-subscripts -Wreturn-type \
 	-Wformat -Wformat-security -Wno-format-y2k -Wundef \
 	-Wmissing-format-attribute -Wpointer-arith -Wwrite-strings \
 	-Wno-unused-parameter -Wno-parentheses -fno-exceptions \

@@ -1,7 +1,6 @@
 /*
  * Copyright (C) 2008, 2012 Gustavo Noronha Silva
  * Copyright (C) 2010 Collabora Ltd.
- * Copyright (C) 2013 Knightswarm Handelsbolag
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -34,11 +33,9 @@
 #include <wtf/text/CString.h>
 #include <wtf/text/WTFString.h>
 
-
 using namespace WebCore;
 
 namespace WebKit {
-char *CustomGtkWebInspectorPath = 0;
 
 static void notifyWebViewDestroyed(WebKitWebView* webView, InspectorFrontendClient* inspectorFrontendClient)
 {
@@ -106,24 +103,8 @@ InspectorFrontendChannel* InspectorClient::openInspectorFrontend(InspectorContro
     }
 
     webkit_web_inspector_set_web_view(webInspector, inspectorWebView);
-    
-    GOwnPtr<gchar> inspectorURI;
-
-    //Ti
-    // Make the Web Inspector work when running tests
-    if (CustomGtkWebInspectorPath) {
-        String url = CustomGtkWebInspectorPath;
-        url.append("/inspector.html");
-        inspectorURI.set(g_filename_to_uri(url.utf8().data(), NULL, NULL));
-    } else if (g_file_test("WebCore/inspector/front-end/inspector.html", G_FILE_TEST_EXISTS)) {
-        GOwnPtr<gchar> currentDirectory(g_get_current_dir());
-        GOwnPtr<gchar> fullPath(g_strdup_printf("%s/WebCore/inspector/front-end/inspector.html", currentDirectory.get()));
-        inspectorURI.set(g_filename_to_uri(fullPath.get(), NULL, NULL));
-    } else
-        inspectorURI.set(g_filename_to_uri(DATA_DIR"/webkit-1.0/webinspector/inspector.html", NULL, NULL));
  
-    //webkit_web_view_load_uri(inspectorWebView, "resource:///org/webkitgtk/inspector/UserInterface/Main.html");
-    webkit_web_view_load_uri(inspectorWebView, inspectorURI.get());
+    webkit_web_view_load_uri(inspectorWebView, "resource:///org/webkitgtk/inspector/UserInterface/Main.html");
 
     gtk_widget_show(GTK_WIDGET(inspectorWebView));
 

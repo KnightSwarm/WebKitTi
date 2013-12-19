@@ -4,6 +4,7 @@
  *           (C) 2001 Dirk Mueller (mueller@kde.org)
  * Copyright (C) 2003, 2004, 2005, 2006, 2007, 2008 Apple Inc. All rights reserved.
  * Copyright (C) 2008 Nikolas Zimmermann <zimmermann@kde.org>
+ * Copyright (C) 2013 Knightswarm Handelsbolag
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -57,8 +58,6 @@
 #include <wtf/text/TextPosition.h>
 //Ti
 #include "ScriptEvaluator.h"
-//IICDEBUG
-#include <iostream>
 
 #if ENABLE(SVG)
 #include "SVGNames.h"
@@ -165,22 +164,16 @@ bool ScriptElement::isScriptTypeSupported(LegacyTypeSupport supportLegacyTypes) 
     String language = languageAttributeValue();
     if (type.isEmpty() && language.isEmpty())
         return true; // Assume text/javascript.
-    if (type.isEmpty())
-    {
+    if (type.isEmpty()) {
         type = "text/" + language.lower();
         if (MIMETypeRegistry::isSupportedJavaScriptMIMEType(type) || isLegacySupportedJavaScriptLanguage(language))
             return true;
-    }
-    else if (MIMETypeRegistry::isSupportedJavaScriptMIMEType(type.stripWhiteSpace().lower())
-                || (supportLegacyTypes == AllowLegacyTypeInTypeAttribute && isLegacySupportedJavaScriptLanguage(type)))
-    {
+    } else if (MIMETypeRegistry::isSupportedJavaScriptMIMEType(type.stripWhiteSpace().lower()) || (supportLegacyTypes == AllowLegacyTypeInTypeAttribute && isLegacySupportedJavaScriptLanguage(type)))
         return true;
-    }
     else if (language.lower() == "python" || language.lower() == "php" || language.lower() == "ruby")
         return true;
     else if (type.lower() == "text/python" || type.lower() == "text/php" || type.lower() == "text/ruby")
         return true;
-    std::cout << "ERROR: Unsupported language: " << type.utf8().data() << " || " << language.utf8().data() << std::endl; //IICDEBUG
     return false;
 }
 
@@ -188,18 +181,13 @@ bool ScriptElement::isScriptTypeSupported(LegacyTypeSupport supportLegacyTypes) 
 bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, LegacyTypeSupport supportLegacyTypes)
 {
     if (m_alreadyStarted)
-    {
-        std::cout << "IICDEBUG 0" << std::endl;
         return false;
-    }
 
     bool wasParserInserted;
-    if (m_parserInserted)
-    {
+    if (m_parserInserted) {
         wasParserInserted = true;
         m_parserInserted = false;
-    }
-    else
+    } else
         wasParserInserted = false;
 
     if (wasParserInserted && !asyncAttributeValue())
@@ -207,22 +195,13 @@ bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, Legac
 
     // FIXME: HTML5 spec says we should check that all children are either comments or empty text nodes.
     if (!hasSourceAttribute() && !m_element->firstChild())
-    {
-        std::cout << "IICDEBUG 1" << std::endl;
         return false;
-    }
 
     if (!m_element->inDocument())
-    {
-        std::cout << "IICDEBUG 2" << std::endl;
         return false;
-    }
 
     if (!isScriptTypeSupported(supportLegacyTypes))
-    {
-        std::cout << "IICDEBUG 3" << std::endl;
         return false;
-    }
 
     if (wasParserInserted) {
         m_parserInserted = true;
@@ -241,16 +220,10 @@ bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, Legac
         return false;
 
     if (!document->frame()->script().canExecuteScripts(AboutToExecuteScript))
-    {
-        std::cout << "IICDEBUG 4" << std::endl;
         return false;
-    }
 
     if (!isScriptForEventSupported())
-    {
-        std::cout << "IICDEBUG 5" << std::endl;
         return false;
-    }
 
     if (!charsetAttributeValue().isEmpty())
         m_characterEncoding = charsetAttributeValue();
@@ -259,10 +232,7 @@ bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition, Legac
 
     if (hasSourceAttribute())
         if (!requestScript(sourceAttributeValue()))
-        {
-        std::cout << "IICDEBUG 6" << std::endl;
             return false;
-        }
 
     if (hasSourceAttribute() && deferAttributeValue() && m_parserInserted && !asyncAttributeValue()) {
         m_willExecuteWhenDocumentFinishedParsing = true;
@@ -323,64 +293,31 @@ bool ScriptElement::requestScript(const String& sourceUrl)
     return false;
 }
 
-// Helper function
-static bool isSupportedJavaScriptLanguage(const String& language)
-{
-    typedef HashSet<String, CaseFoldingHash> LanguageSet;
-    DEFINE_STATIC_LOCAL(LanguageSet, languages, ());
-    if (languages.isEmpty()) {
-        languages.add("javascript");
-        languages.add("javascript");
-        languages.add("javascript1.0");
-        languages.add("javascript1.1");
-        languages.add("javascript1.2");
-        languages.add("javascript1.3");
-        languages.add("javascript1.4");
-        languages.add("javascript1.5");
-        languages.add("javascript1.6");
-        languages.add("javascript1.7");
-        languages.add("livescript");
-        languages.add("ecmascript");
-        languages.add("jscript");                
-    }
-
-    return languages.contains(language);
-}
-
 void ScriptElement::executeScript(const ScriptSourceCode& sourceCode)
 {
     ASSERT(m_alreadyStarted);
 
-    if (m_evaluated || sourceCode.isEmpty())
-    {
-        return; //Getting m_evaluated for non-eval'd code??
-    }
+    if ((false && m_evaluated) || sourceCode.isEmpty())
+        return;
 
     if (!m_element->document()->contentSecurityPolicy()->allowScriptNonce(m_element->fastGetAttribute(HTMLNames::nonceAttr), m_element->document()->url(), m_startLineNumber))
-    {
         return;
-    }
 
     if (!m_isExternalScript && !m_element->document()->contentSecurityPolicy()->allowInlineScript(m_element->document()->url(), m_startLineNumber))
-    {
         return;
-    }
 
 #if ENABLE(NOSNIFF)
     if (m_isExternalScript && m_cachedScript && !m_cachedScript->mimeTypeAllowedByNosniff()) {
-        m_element->document()->addConsoleMessage(SecurityMessageSource, ErrorMessageLevel, "Refused to execute script from '" 
-            + m_cachedScript->url().stringCenterEllipsizedToLength() + "' because its MIME type ('" + m_cachedScript->mimeType() 
-            + "') is not executable, and strict MIME type checking is enabled.");
+        m_element->document()->addConsoleMessage(SecurityMessageSource, ErrorMessageLevel, "Refused to execute script from '" + m_cachedScript->url().stringCenterEllipsizedToLength() + "' because its MIME type ('" + m_cachedScript->mimeType() + "') is not executable, and strict MIME type checking is enabled.");
         return;
     }
 #endif
+
     if (!shouldExecuteAsJavaScript())
     {
         Frame *frame = m_element->document()->frame();
         if (!frame)
         {
-            //DEBUG
-            m_element->document()->addConsoleMessage(OtherMessageSource, ErrorMessageLevel, "!frame");
             return;
         }
         
@@ -391,12 +328,11 @@ void ScriptElement::executeScript(const ScriptSourceCode& sourceCode)
             {
                 continue;
             }
-            std::cout << "IICDEBUG iter" << std::endl;
 
             m_evaluated = true;
             evaluator->evaluate(typeAttributeValue(), sourceCode,
                 frame->script().windowShell(mainThreadNormalWorld())->window()->globalExec());
-            //Document::updateStyleForAllDocuments(); //Needed? Trying:
+            //Document::updateStyleForAllDocuments(); //Needed? Doesn't exist anymore. Trying:
             frame->document()->updateStyleIfNeeded();
             return;
         }
@@ -405,24 +341,18 @@ void ScriptElement::executeScript(const ScriptSourceCode& sourceCode)
 
     RefPtr<Document> document = m_element->document();
     ASSERT(document);
-    if (Frame* frame = document->frame()) 
-    {
-        if (!frame->script().canExecuteScripts(AboutToExecuteScript))
-            return;
-        
-        m_evaluated = true;
-        IgnoreDestructiveWriteCountIncrementer ignoreDesctructiveWriteCountIncrementer(m_isExternalScript ? document.get() : 0);
-        CurrentScriptIncrementer currentScriptIncrementer(document.get(), m_element);
+    if (Frame* frame = document->frame()) {
+        {
+            IgnoreDestructiveWriteCountIncrementer ignoreDesctructiveWriteCountIncrementer(m_isExternalScript ? document.get() : 0);
+            CurrentScriptIncrementer currentScriptIncrementer(document.get(), m_element);
 
-        // Create a script from the script element node, using the script
-        // block's source and the script block's type.
-        // Note: This is where the script is compiled and actually executed.
-        frame->script().evaluate(sourceCode);
-        //Document::updateStyleForAllDocuments(); //Needed? Trying:
-        frame->document()->updateStyleIfNeeded();
+            // Create a script from the script element node, using the script
+            // block's source and the script block's type.
+            // Note: This is where the script is compiled and actually executed.
+            frame->script().evaluate(sourceCode);
+        }
     }
 }
-
 bool ScriptElement::shouldExecuteAsJavaScript() const
 {
     /*
@@ -438,28 +368,10 @@ bool ScriptElement::shouldExecuteAsJavaScript() const
             return false;
     } else {
         String language = languageAttributeValue();
-        if (!language.isEmpty() && !isSupportedJavaScriptLanguage(language))
+        if (!language.isEmpty() && !isLegacySupportedJavaScriptLanguage(language))
             return false;
-    }    
-
-    // No type or language is specified, so we assume the script to be JavaScript.
-    // We don't yet support setting event listeners via the 'for' attribute for scripts.
-    // If there is such an attribute it's likely better to not execute the script than to do so
-    // immediately and unconditionally.
-    // FIXME: After <rdar://problem/4471751> / https://bugs.webkit.org/show_bug.cgi?id=16915 are resolved 
-    // and we support the for syntax in script tags, this check can be removed and we should just
-    // return 'true' here.
-    //Aaaaancient! Commenting.
-    /*
-    String forAttribute = forAttributeValue();
-    String eventAttribute = eventAttributeValue();
-    if (forAttribute.isEmpty() || eventAttribute.isEmpty())
-        return true;
+    }
     
-    forAttribute = forAttribute.stripWhiteSpace();
-    eventAttribute = eventAttribute.stripWhiteSpace();
-    return equalIgnoringCase(forAttribute, "window") && (equalIgnoringCase(eventAttribute, "onload") || equalIgnoringCase(eventAttribute, "onload()"));
-    */
     return true;
 }
 

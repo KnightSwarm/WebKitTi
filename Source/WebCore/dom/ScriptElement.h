@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2008 Nikolas Zimmermann <zimmermann@kde.org>
- * Copyright (C) 2013 Knightswarm Handelsbolag
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -29,13 +28,13 @@
 
 namespace WebCore {
 
-class ContainerNode;
 class CachedScript;
+class ContainerNode;
 class Element;
-class ScriptElementData;
-class ScriptSourceCode;
-class ScriptEvaluator;
 class ScriptElement;
+class ScriptSourceCode;
+class ScriptElementData;
+class ScriptEvaluator;
 
 class ScriptElement : private CachedResourceClient {
     WTF_MAKE_FAST_ALLOCATED;
@@ -48,8 +47,8 @@ public:
     enum LegacyTypeSupport { DisallowLegacyTypeInTypeAttribute, AllowLegacyTypeInTypeAttribute };
     bool prepareScript(const TextPosition& scriptStartPosition = TextPosition::minimumPosition(), LegacyTypeSupport = DisallowLegacyTypeInTypeAttribute);
 
-    WTF::String scriptCharset() const { return m_characterEncoding; }
-    WTF::String scriptContent() const;
+    String scriptCharset() const { return m_characterEncoding; }
+    String scriptContent() const;
     void executeScript(const ScriptSourceCode&);
     void execute(CachedScript*);
 
@@ -64,10 +63,7 @@ public:
     bool willExecuteWhenDocumentFinishedParsing() const { return m_willExecuteWhenDocumentFinishedParsing; }
     CachedResourceHandle<CachedScript> cachedScript() { return m_cachedScript; }
     
-    //Begin Ti merge attempt
-    // A charset for loading the script (may be overridden by HTTP headers or a BOM).
-    static void addScriptEvaluator(ScriptEvaluator* evaluator);
-    static WTF::Vector<ScriptEvaluator*> evaluators;
+    static void addScriptEvaluator(ScriptEvaluator* evaluator);//Ti
 
 protected:
     void setHaveFiredLoadEvent(bool haveFiredLoad) { m_haveFiredLoad = haveFiredLoad; }
@@ -87,24 +83,24 @@ private:
 
     bool requestScript(const String& sourceUrl);
     void stopLoadRequest();
-    
     //Ti
     bool shouldExecuteAsJavaScript() const;
 
     virtual void notifyFinished(CachedResource*);
 
-    virtual WTF::String sourceAttributeValue() const = 0;
-    virtual WTF::String charsetAttributeValue() const = 0;
-    virtual WTF::String typeAttributeValue() const = 0;
-    virtual WTF::String languageAttributeValue() const = 0;
-    virtual WTF::String forAttributeValue() const = 0;
-    virtual WTF::String eventAttributeValue() const = 0;
+    virtual String sourceAttributeValue() const = 0;
+    virtual String charsetAttributeValue() const = 0;
+    virtual String typeAttributeValue() const = 0;
+    virtual String languageAttributeValue() const = 0;
+    virtual String forAttributeValue() const = 0;
+    virtual String eventAttributeValue() const = 0;
     virtual bool asyncAttributeValue() const = 0;
     virtual bool deferAttributeValue() const = 0;
     virtual bool hasSourceAttribute() const = 0;
 
     Element* m_element;
     bool m_evaluated; //Ti
+    static WTF::Vector<ScriptEvaluator*> evaluators; //Ti
     CachedResourceHandle<CachedScript> m_cachedScript;
     WTF::OrdinalNumber m_startLineNumber;
     bool m_parserInserted : 1;
@@ -117,8 +113,8 @@ private:
     bool m_forceAsync : 1;
     bool m_willExecuteInOrder : 1;
     bool m_requestUsesAccessControl : 1;
-    WTF::String m_characterEncoding;
-    WTF::String m_fallbackCharacterEncoding;
+    String m_characterEncoding;
+    String m_fallbackCharacterEncoding;
 };
 
 ScriptElement* toScriptElementIfPossible(Element*);

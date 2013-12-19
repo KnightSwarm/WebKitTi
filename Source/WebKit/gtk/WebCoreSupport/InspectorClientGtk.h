@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2007 Apple Inc.  All rights reserved.
- * Copyright (C) 2013 Knightswarm Handelsbolag
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -45,7 +44,6 @@ class Page;
 
 namespace WebKit {
 
-extern char* CustomGtkWebInspectorPath; //Ti
 class InspectorFrontendClient;
 
 class InspectorClient : public WebCore::InspectorClient, public WebCore::InspectorFrontendChannel {

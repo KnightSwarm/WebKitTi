@@ -39,9 +39,10 @@ void webkit_titanium_set_preprocess_cb(PreprocessURLCallback cb) {
 }
 
 void webkit_titanium_set_inspector_url(const gchar* url) {
-   if (WebKit::CustomGtkWebInspectorPath)
-       free(WebKit::CustomGtkWebInspectorPath);
-   WebKit::CustomGtkWebInspectorPath = strdup(url);
+//FIXME?
+//   if (WebKit::CustomGtkWebInspectorPath)
+//       free(WebKit::CustomGtkWebInspectorPath);
+//   WebKit::CustomGtkWebInspectorPath = strdup(url);
 }
 
 class EvaluatorAdapter : public WebCore::ScriptEvaluator {
@@ -60,8 +61,6 @@ class EvaluatorAdapter : public WebCore::ScriptEvaluator {
 
         void evaluate(const WTF::String &mimeType, const WebCore::ScriptSourceCode& sourceCode, void *context)
         {
-            //std::cout << "IICDEBUG sourceCode ASCII: " << sourceCode.jsSourceCode().toString().ascii().data() << std::endl; //ASCII screws up \n and \t somehow
-            std::cout << "IICDEBUG sourceCode UTF-8: " << sourceCode.jsSourceCode().toString().utf8().data() << std::endl;
             evaluator->evaluate(mimeType.utf8().data(), sourceCode.jsSourceCode().toString().utf8().data(), context);
         }
 };

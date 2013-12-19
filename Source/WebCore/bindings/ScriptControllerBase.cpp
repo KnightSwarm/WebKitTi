@@ -2,7 +2,6 @@
  *  Copyright (C) 1999-2001 Harri Porten (porten@kde.org)
  *  Copyright (C) 2001 Peter Kelly (pmk@post.com)
  *  Copyright (C) 2006, 2007, 2008 Apple Inc. All rights reserved.
- *  Copyright (C) 2013 Knightswarm Handelsbolag
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -35,8 +34,6 @@
 #include "Settings.h"
 #include "UserGestureIndicator.h"
 #include <wtf/text/TextPosition.h>
-//Ti
-#include "ScriptEvaluator.h"
 
 namespace WebCore {
 
@@ -74,36 +71,6 @@ ScriptValue ScriptController::executeScript(const ScriptSourceCode& sourceCode)
     RefPtr<Frame> protect(m_frame); // Script execution can destroy the frame, and thus the ScriptController.
 
     return evaluate(sourceCode);
-}
-
-//Ti
-ScriptValue ScriptController::executeScript(const ScriptSourceCode& sourceCode, const String& mimeType, ScriptEvaluator *evaluator)
-{
-    if (!canExecuteScripts(AboutToExecuteScript) || isPaused())
-        return ScriptValue();
-
-    if (!evaluator || mimeType.length() == 0)
-        return executeScript(sourceCode);
-    
-    // FIXME, we should eventually pull this from the ScriptEvaluator
-    evaluator->evaluate(mimeType, sourceCode,
-       windowShell(mainThreadNormalWorld())->window()->globalExec());
-
-    /*
-    bool wasRunningScript = m_inExecuteScript;
-    m_inExecuteScript = true;
-
-    // FIXME, we should eventually pull this from the ScriptEvaluator
-    evaluator->evaluate(mimeType, sourceCode,
-       windowShell(mainThreadNormalWorld())->window()->globalExec());
-
-    if (!wasRunningScript) {
-        m_inExecuteScript = false;
-        //Document::updateStyleForAllDocuments(); //Does not exist anymore. Trying:
-        m_frame->document().updateStyleIfNeeded();
-    }
-    */
-    return ScriptValue();
 }
 
 bool ScriptController::executeIfJavaScriptURL(const KURL& url, ShouldReplaceDocumentIfJavaScriptURL shouldReplaceDocumentIfJavaScriptURL)

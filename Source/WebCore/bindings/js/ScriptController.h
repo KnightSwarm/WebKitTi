@@ -3,7 +3,6 @@
  *  Copyright (C) 2001 Peter Kelly (pmk@post.com)
  *  Copyright (C) 2008 Apple Inc. All rights reserved.
  *  Copyright (C) 2008 Eric Seidel <eric@webkit.org>
- *  Copyright (C) 2013 Knightswarm Handelsbolag
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -55,7 +54,6 @@ namespace WebCore {
 class HTMLPlugInElement;
 class Frame;
 class ScriptSourceCode;
-class ScriptEvaluator;
 class ScriptValue;
 class SecurityOrigin;
 class Widget;
@@ -94,8 +92,6 @@ public:
 
     ScriptValue executeScript(const ScriptSourceCode&);
     ScriptValue executeScript(const String& script, bool forceUserGesture = false);
-    //Ti
-    ScriptValue executeScript(const ScriptSourceCode& sourceCode, const String& mimeType, ScriptEvaluator* evaluator);
     ScriptValue executeScriptInWorld(DOMWrapperWorld*, const String& script, bool forceUserGesture = false);
 
     // Returns true if argument is a JavaScript URL.

@@ -61,21 +61,6 @@
 #include <wtf/text/Base64.h>
 #include <wtf/text/CString.h>
 #include "TitaniumProtocols.h"
-//IICDEBUG FIXME removeme
-#include <iostream>
-#define SPEW(X) std::cout << # X " = " << (X) << std::endl;
-#define SPEW2(X) std::cout << # X " = " << (X.utf8().data()) << std::endl;
-namespace WebCore
-{
-void doSpew(WTF::String &string)
-{
-    SPEW(string.utf8().data());
-}
-void doSpew2(WTF::String &string)
-{
-    SPEW2(string);
-}
-}
 
 #if ENABLE(BLOB)
 #include "BlobData.h"
@@ -1054,6 +1039,11 @@ static void cleanupGioOperation(ResourceHandle* handle, bool isDestroying = fals
         d->m_inputStream.clear();
     }
 
+    if (d->m_readBufferPtr)
+        d->m_readBufferPtr = 0;
+    if (!d->m_defaultReadBuffer)
+        d->m_readBufferSize = 0;
+
     /*
     if (d->m_buffer) {
         g_free(d->m_buffer);
@@ -1100,6 +1090,11 @@ static void gioReadCallback(GObject* source, GAsyncResult* res, gpointer data)
         cleanupGioOperation(handle.get());
         return;
     }
+    
+    if (d->m_defersLoading) {
+        d->m_deferredResult = res;
+        return;
+    }
 
     GError *error = 0;
 
@@ -1125,9 +1120,9 @@ static void gioReadCallback(GObject* source, GAsyncResult* res, gpointer data)
     }
 
     //d->m_total += bytesRead;
-    *(totalBytesRead) += bytesRead;
     //client->didReceiveData(handle.get(), d->m_readBufferPtr, bytesRead, d->m_total);
     //client->didReceiveData(handle.get(), d->m_readBufferPtr, bytesRead, bytesRead);
+    *(totalBytesRead) += bytesRead;
     client->didReceiveData(handle.get(), d->m_readBufferPtr, bytesRead, *totalBytesRead);
 
     // didReceiveData may cancel the load, which may release the last reference.
@@ -1341,10 +1336,7 @@ static bool startGio(ResourceHandle* handle, KURL url)
     url.removeFragmentIdentifier();
     url.setQuery(String());
     url.removePort();
-    std::cout << "IICDEBUG startGio: "
-        << url.fileSystemPath().utf8().data()
-        << std::endl;
-
+        
 #if !OS(WINDOWS)
     // we avoid the escaping for local files, because
     // g_filename_from_uri (used internally by GFile) has problems
@@ -1399,15 +1391,9 @@ bool ResourceHandle::start()
     // Only allow the POST and GET methods for non-HTTP requests.
     const ResourceRequest& request = firstRequest();
     bool isHTTPFamilyRequest = request.url().protocolIsInHTTPFamily();
-    if (!isHTTPFamilyRequest && request.httpMethod() != "GET" && request.httpMethod() != "POST")
-    {
-        //if (equalIgnoringCase(request.url().protocol(), "app") || equalIgnoringCase(request.url().protocol(), "ti")); //Continue
-        //else
-        //{
-        //    std::cout << "IICDEBUG: This shouldn't be reached!?" << std::endl;
-            this->scheduleFailure(InvalidURLFailure); // Error must not be reported immediately
-            return true;
-        //}
+    if (!isHTTPFamilyRequest && request.httpMethod() != "GET" && request.httpMethod() != "POST") {
+        this->scheduleFailure(InvalidURLFailure); // Error must not be reported immediately
+        return true;
     }
     
     KURL url = request.url();
@@ -1418,13 +1404,15 @@ bool ResourceHandle::start()
         KURL normalized(TitaniumProtocols::NormalizeURL(url));
         bool isNormalized = strcmp(normalized.string().utf8().data(), url.string().utf8().data()) == 0;
 
-        if (isNormalized && TitaniumProtocols::CanPreprocess(request)) {
+        if (isNormalized && TitaniumProtocols::CanPreprocess(request))
+        {
             return startPreprocessed(this);
-
-        } else {
+        }
+        else
+        {
             d->m_titaniumURL = strdup(url.string().utf8().data());
             KURL fileURL = TitaniumProtocols::URLToFileURL(url);
-            return startGio(this, fileURL);
+            return startGio(this,fileURL);
         }
     }
 
