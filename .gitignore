@@ -9,9 +9,9 @@ DerivedSources*
 Programs*
 config.log
 GNUmakefile
+GNUmakefile.am
 *.deps*
 autom4te.cache*
 autotoolsconfig.h
-autotoolsconfig.h.in
 config.status
 *.libs*
