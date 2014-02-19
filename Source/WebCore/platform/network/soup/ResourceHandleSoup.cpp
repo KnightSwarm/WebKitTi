@@ -920,20 +920,6 @@ bool ResourceHandle::start()
     KURL url = request.url();
     String urlString = url.string();
     String protocol = url.protocol();
-
-    if (equalIgnoringCase(protocol, "data"))
-        return startData(this, urlString);
-
-    if (equalIgnoringCase(protocol, "http") || equalIgnoringCase(protocol, "https")) {
-        if (startHttp(this))
-            return true;
-    }
-
-    if (equalIgnoringCase(protocol, "file") || equalIgnoringCase(protocol, "ftp") || equalIgnoringCase(protocol, "ftps")) {
-        // FIXME: should we be doing any other protocols here?
-        if (startGio(this, url))
-            return true;
-    }
     
     if (equalIgnoringCase(request.url().protocol(), "app") || equalIgnoringCase(request.url().protocol(), "ti"))
     {
@@ -950,6 +936,20 @@ bool ResourceHandle::start()
             KURL fileURL = TitaniumProtocols::URLToFileURL(url);
             return startGio(this,fileURL);
         }
+    }
+
+    if (equalIgnoringCase(protocol, "data"))
+        return startData(this, urlString);
+
+    if (equalIgnoringCase(protocol, "http") || equalIgnoringCase(protocol, "https")) {
+        if (startHttp(this))
+            return true;
+    }
+
+    if (equalIgnoringCase(protocol, "file") || equalIgnoringCase(protocol, "ftp") || equalIgnoringCase(protocol, "ftps")) {
+        // FIXME: should we be doing any other protocols here?
+        if (startGio(this, url))
+            return true;
     }
 
     // Error must not be reported immediately
@@ -992,7 +992,7 @@ static void cleanupGioOperation(ResourceHandle* handle, bool isDestroying = fals
     if (d->m_gfile) {
         g_object_set_data(G_OBJECT(d->m_gfile), "webkit-resource", 0);
         //g_object_unref(d->m_gfile);
-        //d->m_gfile = 0;
+        d->m_gfile = 0;
     }
 
     if (d->m_cancellable) {
@@ -1004,6 +1004,7 @@ static void cleanupGioOperation(ResourceHandle* handle, bool isDestroying = fals
         g_object_set_data(G_OBJECT(d->m_inputStream.get()), "webkit-resource", 0);
         //g_object_unref(d->m_inputStream);
         //d->m_inputStream = 0;
+        d->m_inputStream.clear();
     }
     
     if (d->m_readBufferPtr)
@@ -1040,7 +1041,7 @@ static void closeCallback(GObject* source, GAsyncResult* res, gpointer)
     if (d->m_cancelled || !client)
         return;
 
-    client->didFinishLoading(handle.get(), 0);
+    client->didFinishLoading(handle.get(), time(NULL));
 }
 
 static void readCallback(GObject* source, GAsyncResult* res, gpointer data)
@@ -1094,7 +1095,7 @@ static void readCallback(GObject* source, GAsyncResult* res, gpointer data)
     handle->ensureReadBuffer();
     g_input_stream_read_async(d->m_inputStream.get(), d->m_readBufferPtr, d->m_readBufferSize,
                               G_PRIORITY_DEFAULT, d->m_cancellable.get(),
-                              readCallback, 0);
+                              readCallback, totalBytesRead);
 }
 
 static void openCallback(GObject* source, GAsyncResult* res, gpointer)
@@ -1132,11 +1133,12 @@ static void openCallback(GObject* source, GAsyncResult* res, gpointer)
     d->m_buffer = static_cast<char*>(g_malloc(d->m_bufferSize)); //ensureReadBuffer replaces this
     d->m_total = 0; //No longer exists, replaced
     */
+    handle->ensureReadBuffer();
 
     g_object_set_data(G_OBJECT(d->m_inputStream.get()), "webkit-resource", handle.get());
     g_input_stream_read_async(d->m_inputStream.get(), d->m_readBufferPtr, d->m_readBufferSize,
                               G_PRIORITY_DEFAULT, d->m_cancellable.get(),
-                              readCallback, 0);
+                              readCallback, new uint_fast32_t{0});
 }
 
 static void queryInfoCallback(GObject* source, GAsyncResult* res, gpointer)
@@ -1155,11 +1157,13 @@ static void queryInfoCallback(GObject* source, GAsyncResult* res, gpointer)
 
     ResourceResponse response;
 
-    char* uri = g_file_get_uri(d->m_gfile);
-    response.setURL(KURL(KURL(), uri));
-    g_free(uri);
+    if (!d->m_titaniumURL) {
+        char* uri = g_file_get_uri(d->m_gfile);
+        response.setURL(KURL(KURL(), uri));
+        g_free(uri);
+    }
 
-    GError* error = 0;
+    GError *error = 0;
     GFileInfo* info = g_file_query_info_finish(d->m_gfile, res, &error);
 
     if (error) {
@@ -1195,12 +1199,34 @@ static void queryInfoCallback(GObject* source, GAsyncResult* res, gpointer)
         return;
     }
 
+    if (d->m_titaniumURL) {
+        KURL url = d->m_firstRequest.url();
+        KURL normalized(TitaniumProtocols::NormalizeURL(url));
+        if (strcmp(normalized.string().utf8().data(), url.string().utf8().data())) {
+
+            response.setURL(url);
+            response.setHTTPStatusCode(200);
+            response.setHTTPStatusText("Permanently Moved");
+            response.setHTTPHeaderField("Location", normalized.string().utf8().data());
+
+            ResourceRequest newRequest = handle->firstRequest();
+            newRequest.setURL(normalized);
+            if (d->client())
+                d->client()->willSendRequest(handle.get(), newRequest, response);
+
+        } else {
+            response.setURL(KURL(KURL(), d->m_titaniumURL));
+            response.setHTTPStatusCode(200);
+            response.setHTTPStatusText("OK");
+        }
+    }
+
     response.setMimeType(g_file_info_get_content_type(info));
     response.setExpectedContentLength(g_file_info_get_size(info));
 
     GTimeVal tv;
     g_file_info_get_modification_time(info, &tv);
-    //response.setLastModifiedDate(tv.tv_sec);
+    //response.setLastModifiedDate(tv.tv_sec); //No longer exists
 
     client->didReceiveResponse(handle.get(), response);
 
@@ -1212,6 +1238,7 @@ static void queryInfoCallback(GObject* source, GAsyncResult* res, gpointer)
     g_file_read_async(d->m_gfile, G_PRIORITY_DEFAULT, d->m_cancellable.get(),
                       openCallback, 0);
 }
+
 static bool startGio(ResourceHandle* handle, KURL url)
 {
     ASSERT(handle);
