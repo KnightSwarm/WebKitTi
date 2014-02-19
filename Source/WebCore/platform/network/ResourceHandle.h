@@ -102,6 +102,7 @@ class ResourceHandle : public RefCounted<ResourceHandle>
 public:
     static PassRefPtr<ResourceHandle> create(NetworkingContext*, const ResourceRequest&, ResourceHandleClient*, bool defersLoading, bool shouldContentSniff);
     static void loadResourceSynchronously(NetworkingContext*, const ResourceRequest&, StoredCredentials, ResourceError&, ResourceResponse&, Vector<char>& data);
+    static void prepareForURL(const KURL&);
 
     virtual ~ResourceHandle();
 
