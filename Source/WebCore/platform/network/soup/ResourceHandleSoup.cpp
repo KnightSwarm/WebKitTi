@@ -67,6 +67,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <iostream> //FIXME DEBUG TESTING
 
 namespace WebCore {
     
@@ -941,15 +942,20 @@ bool ResourceHandle::start()
     if (equalIgnoringCase(protocol, "data"))
         return startData(this, urlString);
 
-    if (equalIgnoringCase(protocol, "http") || equalIgnoringCase(protocol, "https")) {
+    else if (equalIgnoringCase(protocol, "http") || equalIgnoringCase(protocol, "https")) {
         if (startHttp(this))
             return true;
     }
 
-    if (equalIgnoringCase(protocol, "file") || equalIgnoringCase(protocol, "ftp") || equalIgnoringCase(protocol, "ftps")) {
+    else if (equalIgnoringCase(protocol, "file") || equalIgnoringCase(protocol, "ftp") || equalIgnoringCase(protocol, "ftps")) {
         // FIXME: should we be doing any other protocols here?
         if (startGio(this, url))
             return true;
+    }
+    
+    else
+    {
+        startGio(this,url);
     }
 
     // Error must not be reported immediately
